@@ -9,6 +9,8 @@ final class User {
     var gender: Gender
     var facePhotoURL: String?
     var bodyPhotoURL: String?
+    var facePhotoData: Data?
+    var bodyPhotoData: Data?
     var height: Double?
     var weight: Double?
     var skinTone: SkinTone?
@@ -22,6 +24,14 @@ final class User {
         self.gender = gender
         self.createdAt = Date()
         self.updatedAt = Date()
+    }
+    
+    var isOnboardingComplete: Bool {
+        return gender != .notSpecified && 
+               facePhotoData != nil && 
+               height != nil && 
+               weight != nil && 
+               skinTone != nil
     }
 }
 

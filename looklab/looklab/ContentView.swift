@@ -23,7 +23,7 @@ struct ContentView: View {
                 if firebaseManager.isSignedIn {
                     if let currentUser = firebaseManager.currentUser {
                         // Check if onboarding is complete
-                        if currentUser.gender != .notSpecified {
+                        if currentUser.isOnboardingComplete {
                             MainTabView()
                         } else {
                             OnboardingFlowView(user: currentUser)
@@ -99,17 +99,26 @@ struct OnboardingView: View {
 struct OnboardingFlowView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var firebaseManager = FirebaseManager.shared
-    @State private var currentStep: OnboardingStep = .gender
+    @State private var currentStep: OnboardingStep
     @State private var user: User
     
     init(user: User? = nil) {
         if let existingUser = user {
             _user = State(initialValue: existingUser)
+            // Determine current step based on what's already completed
+            if existingUser.gender == .notSpecified {
+                _currentStep = State(initialValue: .gender)
+            } else if existingUser.facePhotoData == nil {
+                _currentStep = State(initialValue: .facePhoto)
+            } else {
+                _currentStep = State(initialValue: .bodyInfo)
+            }
         } else {
             // Get UID from Firebase Auth directly
             let uid = Auth.auth().currentUser?.uid ?? ""
             let newUser = User(id: uid)
             _user = State(initialValue: newUser)
+            _currentStep = State(initialValue: .gender)
         }
     }
     
@@ -269,6 +278,15 @@ struct FacePhotoUploadView: View {
             Spacer()
             
             Button("Continue") {
+                if let selectedImage = selectedImage {
+                    // Convert UIImage to Data and save to user model
+                    if let imageData = selectedImage.jpegData(compressionQuality: 0.8) {
+                        // For now, we'll store as base64 string
+                        // TODO: Upload to Firebase Storage and store URL
+                        user.facePhotoData = imageData
+                    }
+                }
+                user.updatedAt = Date()
                 onComplete()
             }
             .buttonStyle(PrimaryButtonStyle())
@@ -398,6 +416,16 @@ struct BodyInfoView: View {
             user.height = selectedHeight
             user.weight = selectedWeight
             user.skinTone = selectedSkinTone
+            
+            if let selectedBodyImage = selectedBodyImage {
+                // Convert UIImage to Data and save to user model
+                if let imageData = selectedBodyImage.jpegData(compressionQuality: 0.8) {
+                    // For now, we'll store as base64 string
+                    // TODO: Upload to Firebase Storage and store URL
+                    user.bodyPhotoData = imageData
+                }
+            }
+            
             user.updatedAt = Date()
             onComplete()
         }
