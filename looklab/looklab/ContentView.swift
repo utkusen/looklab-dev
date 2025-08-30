@@ -135,13 +135,21 @@ struct OnboardingFlowView: View {
                     }
                 }
             case .facePhoto:
-                FacePhotoUploadView(user: $user) {
+                FacePhotoUploadView(user: $user, onBack: {
+                    withAnimation {
+                        currentStep = .gender
+                    }
+                }) {
                     withAnimation {
                         currentStep = .bodyInfo
                     }
                 }
             case .bodyInfo:
-                BodyInfoView(user: $user) {
+                BodyInfoView(user: $user, onBack: {
+                    withAnimation {
+                        currentStep = .facePhoto
+                    }
+                }) {
                     saveUser()
                 }
             }
@@ -220,58 +228,87 @@ struct GenderSelectionView: View {
 
 struct FacePhotoUploadView: View {
     @Binding var user: User
+    let onBack: () -> Void
     let onComplete: () -> Void
     @State private var showingImagePicker = false
     @State private var showingCamera = false
+    @State private var showingSampleGallery = false
+    @State private var showingActionSheet = false
     @State private var selectedImage: UIImage?
     
     var body: some View {
         VStack(spacing: 32) {
+            // Back button
+            HStack {
+                Button(action: onBack) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .medium))
+                        Text("Back")
+                            .font(.theme.body)
+                    }
+                    .foregroundColor(.theme.primary)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+            
             VStack(spacing: 16) {
                 Text("Add your photo")
                     .font(.theme.largeTitle)
                     .foregroundColor(.theme.textPrimary)
                     .multilineTextAlignment(.center)
                 
-                Text("This helps us create more accurate looks for you")
+                Text("Tap the circle to add a photo")
                     .font(.theme.body)
                     .foregroundColor(.theme.textSecondary)
                     .multilineTextAlignment(.center)
             }
-            .padding(.top, 60)
             
             Spacer()
             
             VStack(spacing: 24) {
-                ZStack {
-                    Circle()
-                        .fill(Color.theme.surface)
-                        .frame(width: 200, height: 200)
-                    
-                    if let selectedImage = selectedImage {
-                        Image(uiImage: selectedImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
+                // Clickable photo area
+                Button(action: {
+                    showingActionSheet = true
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.theme.surface)
                             .frame(width: 200, height: 200)
-                            .clipShape(Circle())
-                    } else {
-                        Image(systemName: "person.crop.circle")
-                            .font(.system(size: 80))
-                            .foregroundColor(.theme.textSecondary)
+                            .overlay(
+                                Circle()
+                                    .stroke(selectedImage != nil ? Color.theme.primary : Color.theme.border, lineWidth: 2)
+                            )
+                        
+                        if let selectedImage = selectedImage {
+                            Image(uiImage: selectedImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 196, height: 196)
+                                .clipShape(Circle())
+                        } else {
+                            VStack(spacing: 8) {
+                                Image(systemName: "person.crop.circle.badge.plus")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.theme.textSecondary)
+                                
+                                Text("Tap to add photo")
+                                    .font(.theme.caption1)
+                                    .foregroundColor(.theme.textSecondary)
+                            }
+                        }
                     }
                 }
+                .buttonStyle(PlainButtonStyle())
                 
-                VStack(spacing: 12) {
-                    Button("Take Photo") {
-                        showingCamera = true
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
-                    
-                    Button("Select from Gallery") {
-                        showingImagePicker = true
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
+                // Sample gallery option
+                Button("Select Sample Face From the Gallery") {
+                    showingSampleGallery = true
                 }
+                .buttonStyle(SecondaryButtonStyle())
                 .padding(.horizontal, 24)
             }
             
@@ -281,157 +318,172 @@ struct FacePhotoUploadView: View {
                 if let selectedImage = selectedImage {
                     // Convert UIImage to Data and save to user model
                     if let imageData = selectedImage.jpegData(compressionQuality: 0.8) {
-                        // For now, we'll store as base64 string
-                        // TODO: Upload to Firebase Storage and store URL
                         user.facePhotoData = imageData
                     }
                 }
                 user.updatedAt = Date()
                 onComplete()
             }
-            .buttonStyle(PrimaryButtonStyle())
+            .buttonStyle(PrimaryButtonStyle(disabled: selectedImage == nil))
             .padding(.horizontal, 24)
             .disabled(selectedImage == nil)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.theme.background)
+        .actionSheet(isPresented: $showingActionSheet) {
+            ActionSheet(
+                title: Text("Select Photo"),
+                buttons: [
+                    .default(Text("Camera")) {
+                        showingCamera = true
+                    },
+                    .default(Text("Photo Library")) {
+                        showingImagePicker = true
+                    },
+                    .cancel()
+                ]
+            )
+        }
         .sheet(isPresented: $showingImagePicker) {
             ImagePicker(selectedImage: $selectedImage, sourceType: .photoLibrary)
         }
         .sheet(isPresented: $showingCamera) {
             ImagePicker(selectedImage: $selectedImage, sourceType: .camera)
         }
+        .sheet(isPresented: $showingSampleGallery) {
+            SampleFaceGalleryView(selectedImage: $selectedImage)
+        }
     }
 }
 
 struct BodyInfoView: View {
     @Binding var user: User
+    let onBack: () -> Void
     let onComplete: () -> Void
-    @State private var selectedHeight: Double = 170
-    @State private var selectedWeight: Double = 70
-    @State private var selectedSkinTone: SkinTone = .medium
     @State private var showingImagePicker = false
+    @State private var showingCamera = false
+    @State private var showingSampleGallery = false
+    @State private var showingActionSheet = false
     @State private var selectedBodyImage: UIImage?
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 32) {
-                headerView
-                bodyInputsView
-                continueButton
+        VStack(spacing: 32) {
+            // Back button
+            HStack {
+                Button(action: onBack) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .medium))
+                        Text("Back")
+                            .font(.theme.body)
+                    }
+                    .foregroundColor(.theme.primary)
+                }
+                
+                Spacer()
             }
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+            
+            VStack(spacing: 16) {
+                Text("Add body photo")
+                    .font(.theme.largeTitle)
+                    .foregroundColor(.theme.textPrimary)
+                    .multilineTextAlignment(.center)
+                
+                Text("Tap the area to add a body photo")
+                    .font(.theme.body)
+                    .foregroundColor(.theme.textSecondary)
+                    .multilineTextAlignment(.center)
+            }
+            
+            Spacer()
+            
+            VStack(spacing: 24) {
+                // Clickable body photo area
+                Button(action: {
+                    showingActionSheet = true
+                }) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(Color.theme.surface)
+                            .frame(width: 200, height: 300)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(selectedBodyImage != nil ? Color.theme.primary : Color.theme.border, lineWidth: 2)
+                            )
+                        
+                        if let selectedBodyImage = selectedBodyImage {
+                            Image(uiImage: selectedBodyImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 196, height: 296)
+                                .clipShape(RoundedRectangle(cornerRadius: 18))
+                        } else {
+                            VStack(spacing: 12) {
+                                Image(systemName: "person.crop.rectangle.badge.plus")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.theme.textSecondary)
+                                
+                                Text("Tap to add body photo")
+                                    .font(.theme.body)
+                                    .foregroundColor(.theme.textSecondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                        }
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                // Sample gallery option
+                Button("Select Sample Body From the Gallery") {
+                    showingSampleGallery = true
+                }
+                .buttonStyle(SecondaryButtonStyle())
+                .padding(.horizontal, 24)
+            }
+            
+            Spacer()
+            
+            Button("Get Started") {
+                if let selectedBodyImage = selectedBodyImage {
+                    if let imageData = selectedBodyImage.jpegData(compressionQuality: 0.8) {
+                        user.bodyPhotoData = imageData
+                    }
+                }
+                
+                user.updatedAt = Date()
+                onComplete()
+            }
+            .buttonStyle(PrimaryButtonStyle(disabled: selectedBodyImage == nil))
+            .padding(.horizontal, 24)
+            .disabled(selectedBodyImage == nil)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.theme.background)
+        .actionSheet(isPresented: $showingActionSheet) {
+            ActionSheet(
+                title: Text("Select Photo"),
+                buttons: [
+                    .default(Text("Camera")) {
+                        showingCamera = true
+                    },
+                    .default(Text("Photo Library")) {
+                        showingImagePicker = true
+                    },
+                    .cancel()
+                ]
+            )
+        }
         .sheet(isPresented: $showingImagePicker) {
             ImagePicker(selectedImage: $selectedBodyImage, sourceType: .photoLibrary)
         }
-    }
-    
-    private var headerView: some View {
-        VStack(spacing: 16) {
-            Text("Body information")
-                .font(.theme.largeTitle)
-                .foregroundColor(.theme.textPrimary)
-                .multilineTextAlignment(.center)
-            
-            Text("Help us create the perfect fit")
-                .font(.theme.body)
-                .foregroundColor(.theme.textSecondary)
-                .multilineTextAlignment(.center)
+        .sheet(isPresented: $showingCamera) {
+            ImagePicker(selectedImage: $selectedBodyImage, sourceType: .camera)
         }
-        .padding(.top, 60)
-    }
-    
-    private var bodyInputsView: some View {
-        VStack(spacing: 24) {
-            heightSlider
-            weightSlider
-            skinToneSelection
-            bodyPhotoSection
+        .sheet(isPresented: $showingSampleGallery) {
+            SampleBodyGalleryView(selectedImage: $selectedBodyImage)
         }
-        .padding(.horizontal, 24)
-    }
-    
-    private var heightSlider: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Height: \(Int(selectedHeight)) cm")
-                .font(.theme.headline)
-                .foregroundColor(.theme.textPrimary)
-            
-            Slider(value: $selectedHeight, in: 140...210, step: 1)
-                .accentColor(.theme.primary)
-        }
-    }
-    
-    private var weightSlider: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Weight: \(Int(selectedWeight)) kg")
-                .font(.theme.headline)
-                .foregroundColor(.theme.textPrimary)
-            
-            Slider(value: $selectedWeight, in: 40...150, step: 1)
-                .accentColor(.theme.primary)
-        }
-    }
-    
-    private var skinToneSelection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Skin Tone")
-                .font(.theme.headline)
-                .foregroundColor(.theme.textPrimary)
-            
-            skinToneGrid
-        }
-    }
-    
-    private var skinToneGrid: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 12) {
-            ForEach(SkinTone.allCases, id: \.self) { tone in
-                SkinToneButton(tone: tone, selectedTone: $selectedSkinTone)
-            }
-        }
-    }
-    
-    private var bodyPhotoSection: some View {
-        VStack(spacing: 12) {
-            Text("Body Photo (Optional)")
-                .font(.theme.headline)
-                .foregroundColor(.theme.textPrimary)
-            
-            Button("Upload Body Photo") {
-                showingImagePicker = true
-            }
-            .buttonStyle(SecondaryButtonStyle())
-            
-            if selectedBodyImage != nil {
-                Text("Photo uploaded ✓")
-                    .font(.theme.caption1)
-                    .foregroundColor(.theme.primary)
-            }
-        }
-    }
-    
-    private var continueButton: some View {
-        Button("Get Started") {
-            user.height = selectedHeight
-            user.weight = selectedWeight
-            user.skinTone = selectedSkinTone
-            
-            if let selectedBodyImage = selectedBodyImage {
-                // Convert UIImage to Data and save to user model
-                if let imageData = selectedBodyImage.jpegData(compressionQuality: 0.8) {
-                    // For now, we'll store as base64 string
-                    // TODO: Upload to Firebase Storage and store URL
-                    user.bodyPhotoData = imageData
-                }
-            }
-            
-            user.updatedAt = Date()
-            onComplete()
-        }
-        .buttonStyle(PrimaryButtonStyle())
-        .padding(.horizontal, 24)
-        .padding(.bottom, 40)
     }
 }
 
@@ -455,16 +507,22 @@ struct SkinToneButton: View {
 }
 
 struct PrimaryButtonStyle: ButtonStyle {
+    let disabled: Bool
+    
+    init(disabled: Bool = false) {
+        self.disabled = disabled
+    }
+    
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.theme.headline)
-            .foregroundColor(.theme.background)
+            .foregroundColor(disabled ? .theme.textSecondary : .theme.background)
             .frame(maxWidth: .infinity)
             .frame(height: 56)
-            .background(Color.theme.primary)
+            .background(disabled ? Color.theme.surface : Color.theme.primary)
             .cornerRadius(16)
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .opacity(configuration.isPressed ? 0.8 : 1.0)
+            .scaleEffect(configuration.isPressed && !disabled ? 0.95 : 1.0)
+            .opacity(disabled ? 0.6 : (configuration.isPressed ? 0.8 : 1.0))
     }
 }
 
@@ -555,6 +613,222 @@ struct ProfileView: View {
     var body: some View {
         Text("Profile")
             .foregroundColor(.theme.textPrimary)
+    }
+}
+
+struct SampleFaceGalleryView: View {
+    @Binding var selectedImage: UIImage?
+    @Environment(\.presentationMode) var presentationMode
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 24) {
+                Text("Select a Sample Face")
+                    .font(.theme.title2)
+                    .foregroundColor(.theme.textPrimary)
+                    .padding(.top, 20)
+                
+                Text("Choose from our sample faces below")
+                    .font(.theme.body)
+                    .foregroundColor(.theme.textSecondary)
+                    .multilineTextAlignment(.center)
+                
+                Spacer()
+                
+                // Sample faces grid
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 2), spacing: 16) {
+                    // Sample face 1 - using system person icon for now
+                    Button(action: {
+                        // Create a sample face image from system icon
+                        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 200, height: 200))
+                        let sampleImage = renderer.image { context in
+                            UIColor.systemGray3.setFill()
+                            context.fill(CGRect(x: 0, y: 0, width: 200, height: 200))
+                            
+                            let config = UIImage.SymbolConfiguration(pointSize: 80, weight: .regular)
+                            let personIcon = UIImage(systemName: "person.crop.circle.fill", withConfiguration: config)
+                            personIcon?.draw(in: CGRect(x: 60, y: 60, width: 80, height: 80))
+                        }
+                        
+                        selectedImage = sampleImage
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.theme.surface)
+                                .frame(height: 120)
+                            
+                            VStack(spacing: 8) {
+                                Image(systemName: "person.crop.circle.fill")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.theme.textSecondary)
+                                
+                                Text("Sample Face 1")
+                                    .font(.theme.caption1)
+                                    .foregroundColor(.theme.textSecondary)
+                            }
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    // Sample face 2 - different icon
+                    Button(action: {
+                        // Create a different sample face image
+                        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 200, height: 200))
+                        let sampleImage = renderer.image { context in
+                            UIColor.systemBlue.withAlphaComponent(0.2).setFill()
+                            context.fill(CGRect(x: 0, y: 0, width: 200, height: 200))
+                            
+                            let config = UIImage.SymbolConfiguration(pointSize: 80, weight: .regular)
+                            let personIcon = UIImage(systemName: "person.crop.circle", withConfiguration: config)
+                            personIcon?.draw(in: CGRect(x: 60, y: 60, width: 80, height: 80))
+                        }
+                        
+                        selectedImage = sampleImage
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.theme.surface)
+                                .frame(height: 120)
+                            
+                            VStack(spacing: 8) {
+                                Image(systemName: "person.crop.circle")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.theme.primary)
+                                
+                                Text("Sample Face 2")
+                                    .font(.theme.caption1)
+                                    .foregroundColor(.theme.textSecondary)
+                            }
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .padding(.horizontal, 24)
+                
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.theme.background)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                    .foregroundColor(.theme.primary)
+                }
+            }
+        }
+    }
+}
+
+struct SampleBodyGalleryView: View {
+    @Binding var selectedImage: UIImage?
+    @Environment(\.presentationMode) var presentationMode
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 24) {
+                Text("Select a Sample Body")
+                    .font(.theme.title2)
+                    .foregroundColor(.theme.textPrimary)
+                    .padding(.top, 20)
+                
+                Text("Choose from our sample body types below")
+                    .font(.theme.body)
+                    .foregroundColor(.theme.textSecondary)
+                    .multilineTextAlignment(.center)
+                
+                Spacer()
+                
+                // Sample body grid
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 2), spacing: 16) {
+                    // Sample body 1
+                    Button(action: {
+                        // Create a sample body image
+                        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 200, height: 300))
+                        let sampleImage = renderer.image { context in
+                            UIColor.systemGray3.setFill()
+                            context.fill(CGRect(x: 0, y: 0, width: 200, height: 300))
+                            
+                            let config = UIImage.SymbolConfiguration(pointSize: 80, weight: .regular)
+                            let personIcon = UIImage(systemName: "person.crop.rectangle.fill", withConfiguration: config)
+                            personIcon?.draw(in: CGRect(x: 60, y: 110, width: 80, height: 80))
+                        }
+                        
+                        selectedImage = sampleImage
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.theme.surface)
+                                .frame(height: 160)
+                            
+                            VStack(spacing: 8) {
+                                Image(systemName: "person.crop.rectangle.fill")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.theme.textSecondary)
+                                
+                                Text("Sample Body 1")
+                                    .font(.theme.caption1)
+                                    .foregroundColor(.theme.textSecondary)
+                            }
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    // Sample body 2
+                    Button(action: {
+                        // Create a different sample body image
+                        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 200, height: 300))
+                        let sampleImage = renderer.image { context in
+                            UIColor.systemBlue.withAlphaComponent(0.2).setFill()
+                            context.fill(CGRect(x: 0, y: 0, width: 200, height: 300))
+                            
+                            let config = UIImage.SymbolConfiguration(pointSize: 80, weight: .regular)
+                            let personIcon = UIImage(systemName: "person.crop.rectangle", withConfiguration: config)
+                            personIcon?.draw(in: CGRect(x: 60, y: 110, width: 80, height: 80))
+                        }
+                        
+                        selectedImage = sampleImage
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.theme.surface)
+                                .frame(height: 160)
+                            
+                            VStack(spacing: 8) {
+                                Image(systemName: "person.crop.rectangle")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.theme.primary)
+                                
+                                Text("Sample Body 2")
+                                    .font(.theme.caption1)
+                                    .foregroundColor(.theme.textSecondary)
+                            }
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .padding(.horizontal, 24)
+                
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.theme.background)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                    .foregroundColor(.theme.primary)
+                }
+            }
+        }
     }
 }
 

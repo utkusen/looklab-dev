@@ -29,9 +29,7 @@ final class User {
     var isOnboardingComplete: Bool {
         return gender != .notSpecified && 
                facePhotoData != nil && 
-               height != nil && 
-               weight != nil && 
-               skinTone != nil
+               bodyPhotoData != nil
     }
 }
 
