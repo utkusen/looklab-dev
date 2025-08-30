@@ -6,7 +6,7 @@ final class User {
     var id: String
     var email: String?
     var fullName: String?
-    var gender: Gender
+    var fashionInterest: FashionInterest
     var facePhotoURL: String?
     var bodyPhotoURL: String?
     var facePhotoData: Data?
@@ -17,34 +17,34 @@ final class User {
     var createdAt: Date
     var updatedAt: Date
     
-    init(id: String, email: String? = nil, fullName: String? = nil, gender: Gender = .notSpecified) {
+    init(id: String, email: String? = nil, fullName: String? = nil, fashionInterest: FashionInterest = .notSpecified) {
         self.id = id
         self.email = email
         self.fullName = fullName
-        self.gender = gender
+        self.fashionInterest = fashionInterest
         self.createdAt = Date()
         self.updatedAt = Date()
     }
     
     var isOnboardingComplete: Bool {
-        return gender != .notSpecified && 
+        return fashionInterest != .notSpecified && 
                facePhotoData != nil && 
                bodyPhotoData != nil
     }
 }
 
-enum Gender: String, CaseIterable, Codable {
+enum FashionInterest: String, CaseIterable, Codable {
     case male = "male"
     case female = "female"
-    case nonBinary = "non_binary"
+    case everything = "everything"
     case notSpecified = "not_specified"
     
     var displayName: String {
         switch self {
-        case .male: return "Male"
-        case .female: return "Female"
-        case .nonBinary: return "Non-binary"
-        case .notSpecified: return "Prefer not to say"
+        case .male: return "Men's Fashion"
+        case .female: return "Women's Fashion"
+        case .everything: return "Everything"
+        case .notSpecified: return "Not Specified"
         }
     }
 }

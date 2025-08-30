@@ -58,10 +58,10 @@ final class FirebaseManager: ObservableObject {
     private func parseUserData(uid: String, data: [String: Any]) -> User? {
         let email = data["email"] as? String
         let fullName = data["fullName"] as? String
-        let genderString = data["gender"] as? String ?? "not_specified"
-        let gender = Gender(rawValue: genderString) ?? .notSpecified
+        let fashionInterestString = data["fashionInterest"] as? String ?? "not_specified"
+        let fashionInterest = FashionInterest(rawValue: fashionInterestString) ?? .notSpecified
         
-        let user = User(id: uid, email: email, fullName: fullName, gender: gender)
+        let user = User(id: uid, email: email, fullName: fullName, fashionInterest: fashionInterest)
         user.facePhotoURL = data["facePhotoURL"] as? String
         user.bodyPhotoURL = data["bodyPhotoURL"] as? String
         user.height = data["height"] as? Double
@@ -95,7 +95,7 @@ final class FirebaseManager: ObservableObject {
         let userData: [String: Any] = [
             "email": user.email ?? "",
             "fullName": user.fullName ?? "",
-            "gender": user.gender.rawValue,
+            "fashionInterest": user.fashionInterest.rawValue,
             "facePhotoURL": user.facePhotoURL ?? "",
             "bodyPhotoURL": user.bodyPhotoURL ?? "",
             "height": user.height ?? 0,

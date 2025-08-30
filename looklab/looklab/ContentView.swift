@@ -106,7 +106,7 @@ struct OnboardingFlowView: View {
         if let existingUser = user {
             _user = State(initialValue: existingUser)
             // Determine current step based on what's already completed
-            if existingUser.gender == .notSpecified {
+            if existingUser.fashionInterest == .notSpecified {
                 _currentStep = State(initialValue: .welcome)
             } else if existingUser.facePhotoData == nil {
                 _currentStep = State(initialValue: .facePhoto)
@@ -133,11 +133,11 @@ struct OnboardingFlowView: View {
                 case .welcome:
                     OnboardingWelcomeView {
                         withAnimation(.easeInOut(duration: 0.3)) {
-                            currentStep = .gender
+                            currentStep = .fashionInterest
                         }
                     }
-                case .gender:
-                    GenderSelectionView(user: $user, onBack: {
+                case .fashionInterest:
+                    FashionInterestSelectionView(user: $user, onBack: {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             currentStep = .welcome
                         }
@@ -149,7 +149,7 @@ struct OnboardingFlowView: View {
                 case .facePhoto:
                     FacePhotoUploadView(user: $user, onBack: {
                         withAnimation(.easeInOut(duration: 0.3)) {
-                            currentStep = .gender
+                            currentStep = .fashionInterest
                         }
                     }) {
                         withAnimation(.easeInOut(duration: 0.3)) {
@@ -176,12 +176,12 @@ struct OnboardingFlowView: View {
 }
 
 enum OnboardingStep: Int, CaseIterable {
-    case welcome = 0, gender = 1, facePhoto = 2, bodyInfo = 3
+    case welcome = 0, fashionInterest = 1, facePhoto = 2, bodyInfo = 3
     
     var title: String {
         switch self {
         case .welcome: return "Welcome"
-        case .gender: return "About You"
+        case .fashionInterest: return "Fashion Interest"
         case .facePhoto: return "Face Photo"  
         case .bodyInfo: return "Body Photo"
         }
@@ -192,7 +192,7 @@ enum OnboardingStep: Int, CaseIterable {
     }
 }
 
-struct GenderSelectionView: View {
+struct FashionInterestSelectionView: View {
     @Binding var user: User
     let onBack: () -> Void
     let onComplete: () -> Void
@@ -217,12 +217,12 @@ struct GenderSelectionView: View {
             .padding(.top, 20)
             
             VStack(spacing: 16) {
-                Text("Tell us about yourself")
+                Text("What interests you?")
                     .font(.theme.largeTitle)
                     .foregroundColor(.theme.textPrimary)
                     .multilineTextAlignment(.center)
                 
-                Text("What's your gender?")
+                Text("Choose the fashion style you'd like to explore")
                     .font(.theme.title2)
                     .foregroundColor(.theme.textSecondary)
                     .multilineTextAlignment(.center)
@@ -231,20 +231,20 @@ struct GenderSelectionView: View {
             Spacer()
             
             VStack(spacing: 16) {
-                ForEach([Gender.male, Gender.female, Gender.nonBinary], id: \.self) { gender in
+                ForEach([FashionInterest.male, FashionInterest.female, FashionInterest.everything], id: \.self) { interest in
                     Button(action: {
-                        user.gender = gender
+                        user.fashionInterest = interest
                         user.updatedAt = Date()
                         onComplete()
                     }) {
                         HStack {
-                            Text(gender.displayName)
+                            Text(interest.displayName)
                                 .font(.theme.headline)
                                 .foregroundColor(.theme.textPrimary)
                             
                             Spacer()
                             
-                            if user.gender == gender {
+                            if user.fashionInterest == interest {
                                 Image(systemName: "checkmark.circle.fill")
                                     .foregroundColor(.theme.primary)
                             }
@@ -255,7 +255,7 @@ struct GenderSelectionView: View {
                         .cornerRadius(16)
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)
-                                .stroke(user.gender == gender ? Color.theme.primary : Color.clear, lineWidth: 2)
+                                .stroke(user.fashionInterest == interest ? Color.theme.primary : Color.clear, lineWidth: 2)
                         )
                     }
                 }
