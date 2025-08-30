@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build outputs
+build/
+*/build/
+lib/
+*/lib/
+
+# Xcode
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*/DerivedData/
+*.hmap
+*.ipa
+*.xcresult
+
+# iOS
+*.DS_Store
+.DS_Store
+*/Pods/
+
+# Firebase
+.firebase/
+*/.firebase/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Temporary files
+*.tmp
+*.temp
+
+# Firebase config (sensitive - uncomment to exclude)
+# GoogleService-Info.plist
+# google-services.json
+
+# Package lock files (optional - can be committed)
+package-lock.json
+yarn.lock
