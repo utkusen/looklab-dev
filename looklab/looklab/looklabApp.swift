@@ -7,14 +7,15 @@
 
 import SwiftUI
 import SwiftData
+import FirebaseCore
 
 @main
 struct LookLabApp: App {
     let modelContainer: ModelContainer
     
     init() {
-        // Configure Firebase
-        FirebaseManager.shared.configure()
+        // Configure Firebase FIRST before any Firebase services are accessed
+        FirebaseApp.configure()
         
         // Initialize SwiftData model container
         do {

@@ -18,6 +18,7 @@ final class FirebaseManager: ObservableObject {
     private var authStateListener: AuthStateDidChangeListenerHandle?
     
     private init() {
+        // Firebase should already be configured by the app before this singleton is accessed
         setupAuthListener()
         configureCustomDomain()
     }
@@ -27,10 +28,6 @@ final class FirebaseManager: ObservableObject {
         // This will route function calls through your custom domain via Firebase Hosting rewrites
         // Note: The custom domain routing is handled by Firebase Hosting rewrites in firebase.json
         // Functions will be automatically called through https://looklab.utkusen.com/api/*
-    }
-    
-    func configure() {
-        FirebaseApp.configure()
     }
     
     private func setupAuthListener() {
