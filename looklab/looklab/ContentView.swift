@@ -107,7 +107,7 @@ struct OnboardingFlowView: View {
             _user = State(initialValue: existingUser)
             // Determine current step based on what's already completed
             if existingUser.gender == .notSpecified {
-                _currentStep = State(initialValue: .gender)
+                _currentStep = State(initialValue: .welcome)
             } else if existingUser.facePhotoData == nil {
                 _currentStep = State(initialValue: .facePhoto)
             } else {
@@ -118,7 +118,7 @@ struct OnboardingFlowView: View {
             let uid = Auth.auth().currentUser?.uid ?? ""
             let newUser = User(id: uid)
             _user = State(initialValue: newUser)
-            _currentStep = State(initialValue: .gender)
+            _currentStep = State(initialValue: .welcome)
         }
     }
     
@@ -127,30 +127,43 @@ struct OnboardingFlowView: View {
             Color.theme.background
                 .ignoresSafeArea()
             
-            switch currentStep {
-            case .gender:
-                GenderSelectionView(user: $user) {
-                    withAnimation {
-                        currentStep = .facePhoto
+            VStack(spacing: 0) {
+                // Main content
+                switch currentStep {
+                case .welcome:
+                    OnboardingWelcomeView {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            currentStep = .gender
+                        }
                     }
-                }
-            case .facePhoto:
-                FacePhotoUploadView(user: $user, onBack: {
-                    withAnimation {
-                        currentStep = .gender
+                case .gender:
+                    GenderSelectionView(user: $user, onBack: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            currentStep = .welcome
+                        }
+                    }) {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            currentStep = .facePhoto
+                        }
                     }
-                }) {
-                    withAnimation {
-                        currentStep = .bodyInfo
+                case .facePhoto:
+                    FacePhotoUploadView(user: $user, onBack: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            currentStep = .gender
+                        }
+                    }) {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            currentStep = .bodyInfo
+                        }
                     }
-                }
-            case .bodyInfo:
-                BodyInfoView(user: $user, onBack: {
-                    withAnimation {
-                        currentStep = .facePhoto
+                case .bodyInfo:
+                    BodyInfoView(user: $user, onBack: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            currentStep = .facePhoto
+                        }
+                    }) {
+                        saveUser()
                     }
-                }) {
-                    saveUser()
                 }
             }
         }
@@ -162,16 +175,47 @@ struct OnboardingFlowView: View {
     }
 }
 
-enum OnboardingStep {
-    case gender, facePhoto, bodyInfo
+enum OnboardingStep: Int, CaseIterable {
+    case welcome = 0, gender = 1, facePhoto = 2, bodyInfo = 3
+    
+    var title: String {
+        switch self {
+        case .welcome: return "Welcome"
+        case .gender: return "About You"
+        case .facePhoto: return "Face Photo"  
+        case .bodyInfo: return "Body Photo"
+        }
+    }
+    
+    var totalSteps: Int {
+        return OnboardingStep.allCases.count
+    }
 }
 
 struct GenderSelectionView: View {
     @Binding var user: User
+    let onBack: () -> Void
     let onComplete: () -> Void
     
     var body: some View {
         VStack(spacing: 32) {
+            // Back button
+            HStack {
+                Button(action: onBack) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .medium))
+                        Text("Back")
+                            .font(.theme.body)
+                    }
+                    .foregroundColor(.theme.primary)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+            
             VStack(spacing: 16) {
                 Text("Tell us about yourself")
                     .font(.theme.largeTitle)
@@ -183,7 +227,6 @@ struct GenderSelectionView: View {
                     .foregroundColor(.theme.textSecondary)
                     .multilineTextAlignment(.center)
             }
-            .padding(.top, 60)
             
             Spacer()
             
@@ -831,6 +874,55 @@ struct SampleBodyGalleryView: View {
         }
     }
 }
+
+struct OnboardingWelcomeView: View {
+    let onContinue: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+            
+            VStack(spacing: 32) {
+                // App icon or illustration placeholder
+                ZStack {
+                    Circle()
+                        .fill(Color.theme.primary.opacity(0.1))
+                        .frame(width: 120, height: 120)
+                    
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 50, weight: .medium))
+                        .foregroundColor(.theme.primary)
+                }
+                
+                VStack(spacing: 16) {
+                    Text("Let's create your first look!")
+                        .font(.theme.largeTitle)
+                        .foregroundColor(.theme.textPrimary)
+                        .multilineTextAlignment(.center)
+                    
+                    Text("We need just a bit of information from you to make it accurate and personalized")
+                        .font(.theme.body)
+                        .foregroundColor(.theme.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(nil)
+                        .padding(.horizontal, 32)
+                }
+            }
+            
+            Spacer()
+            
+            Button("Get Started") {
+                onContinue()
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            .padding(.horizontal, 24)
+            .padding(.bottom, 40)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.theme.background)
+    }
+}
+
 
 #Preview {
     ContentView()
