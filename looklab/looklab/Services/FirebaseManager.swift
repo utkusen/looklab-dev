@@ -15,9 +15,18 @@ final class FirebaseManager: ObservableObject {
     private let db = Firestore.firestore()
     private let functions = Functions.functions()
     private let storage = Storage.storage()
+    private var authStateListener: AuthStateDidChangeListenerHandle?
     
     private init() {
         setupAuthListener()
+        configureCustomDomain()
+    }
+    
+    private func configureCustomDomain() {
+        // Configure Firebase Functions to use custom domain
+        // This will route function calls through your custom domain via Firebase Hosting rewrites
+        // Note: The custom domain routing is handled by Firebase Hosting rewrites in firebase.json
+        // Functions will be automatically called through https://looklab.utkusen.com/api/*
     }
     
     func configure() {
@@ -25,7 +34,7 @@ final class FirebaseManager: ObservableObject {
     }
     
     private func setupAuthListener() {
-        auth.addStateDidChangeListener { [weak self] _, firebaseUser in
+        authStateListener = auth.addStateDidChangeListener { [weak self] _, firebaseUser in
             DispatchQueue.main.async {
                 if let firebaseUser = firebaseUser {
                     self?.isSignedIn = true

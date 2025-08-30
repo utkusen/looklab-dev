@@ -6,12 +6,28 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct LookLabApp: App {
+    let modelContainer: ModelContainer
+    
+    init() {
+        // Configure Firebase
+        FirebaseManager.shared.configure()
+        
+        // Initialize SwiftData model container
+        do {
+            modelContainer = try ModelContainer(for: User.self, ClothingItem.self, Look.self)
+        } catch {
+            fatalError("Failed to initialize model container: \(error)")
+        }
+    }
+    
     var body: some Scene {
         WindowGroup {
-            StandaloneContentView()
+            ContentView()
+                .modelContainer(modelContainer)
                 .preferredColorScheme(.dark)
         }
     }

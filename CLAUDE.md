@@ -6,15 +6,40 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Look Lab is an iOS app that generates AI-powered outfit images using clothing items from the user's wardrobe. The app combines SwiftUI frontend with Firebase backend and Google Vertex AI for outfit generation.
 
+## Repository Structure
+
+```
+looklab-dev/                   # Project root (git repository)
+├── looklab/                   # iOS SwiftUI Application
+│   ├── looklab.xcodeproj/     # Xcode project files
+│   ├── looklab/               # Swift source code
+│   │   ├── Models/            # SwiftData models (User, ClothingItem, Look)
+│   │   ├── Views/             # SwiftUI views organized by feature
+│   │   ├── Services/          # Firebase integration services
+│   │   ├── Theme/             # Color and typography system
+│   │   └── GoogleService-Info.plist  # Firebase configuration
+│   ├── looklabTests/          # Unit tests
+│   └── looklabUITests/        # UI tests
+├── looklab-backend/           # Firebase Cloud Functions Backend
+│   ├── src/                   # TypeScript source code
+│   │   └── index.ts           # Cloud Functions implementation
+│   ├── firebase.json          # Firebase project configuration
+│   ├── firestore.rules        # Database security rules
+│   ├── storage.rules          # File storage security rules
+│   └── package.json           # Node.js dependencies
+├── CLAUDE.md                  # AI assistant documentation (this file)
+└── SETUP.md                   # Project setup instructions
+```
+
 ## Build & Development Commands
 
 ### iOS App
 ```bash
-# Build the iOS app
-xcodebuild -project looklab.xcodeproj -scheme looklab -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.6' build
+# Build the iOS app (from project root)
+xcodebuild -project looklab/looklab.xcodeproj -scheme looklab -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.6' build
 
 # Run in simulator (use Xcode GUI)
-# Open looklab.xcodeproj in Xcode and run
+# Open looklab/looklab.xcodeproj in Xcode and run
 ```
 
 ### Backend (Firebase Cloud Functions)
@@ -24,6 +49,9 @@ npm install                    # Install dependencies
 npm run build                  # Compile TypeScript
 npm run serve                  # Local emulator
 firebase deploy --only functions  # Deploy to Firebase
+
+# Deploy all Firebase services
+firebase deploy                   # Deploy functions, firestore rules, storage rules
 ```
 
 ## Architecture & Current State
@@ -62,7 +90,9 @@ The app currently runs in **standalone mode** with Firebase integration disabled
 - ✅ Core data models (User, ClothingItem, Look, Calendar)
 - ✅ Firebase integration architecture (currently disabled)
 - ✅ Apple Sign-In authentication setup
-- ✅ Cloud Functions with Vertex AI integration
+- ✅ Cloud Functions with Vertex AI integration deployed to Firebase
+- ✅ Firebase project configured with Auth, Firestore, Storage, Functions
+- ✅ Bundle identifier: `com.us.looklab` (Apple approved)
 - 🚧 Main feature views are placeholder implementations
 - ❌ Onboarding flow (gender, photos, body info)
 - ❌ Wardrobe management UI
@@ -76,14 +106,18 @@ The app uses a comprehensive dark theme system:
 - All colors defined in Assets.xcassets with dark/light variants
 - Premium feel with rounded design system and gold (#BBD7FF) accent
 
-## Firebase Setup Requirements
+## Firebase Setup Status
 
-Before enabling full functionality:
-1. Replace `looklab/GoogleService-Info.plist` with real Firebase config
-2. Enable Firebase Auth (Apple provider), Firestore, Cloud Storage, Cloud Functions
-3. Deploy Cloud Functions: `cd looklab-backend && firebase deploy`
-4. Switch to `ContentView()` in `looklabApp.swift`
-5. Uncomment Firebase code in `ContentView.swift` and `OnboardingView`
+✅ **Completed Setup:**
+1. ✅ Firebase project created: `looklab-7acba`
+2. ✅ Real `GoogleService-Info.plist` configured with bundle ID `com.us.looklab`
+3. ✅ Firebase services enabled: Auth (Apple), Firestore, Cloud Storage, Cloud Functions
+4. ✅ Cloud Functions deployed with 3 functions: `generateOutfit`, `uploadClothingItem`, `deleteUserData`
+5. ✅ Firestore and Storage security rules deployed
+
+**To Enable Full Functionality:**
+1. Switch to `ContentView()` in `looklabApp.swift`
+2. Uncomment Firebase code in `ContentView.swift` and `OnboardingView`
 
 ## Security Architecture
 
@@ -91,7 +125,7 @@ Before enabling full functionality:
 - Storage rules in `looklab-backend/storage.rules` protect user images  
 - All Cloud Functions require authentication (`context.auth`)
 - User data strictly partitioned by Firebase UID
-- `.gitignore` excludes Firebase config file
+- Firebase config included in repository (production-ready setup)
 
 ## Development Workflow
 
@@ -108,3 +142,23 @@ The app includes placeholder views for all main features. To test Firebase integ
 - Use Firebase Local Emulator Suite during development
 - Test authentication flow with Apple Sign-In in iOS Simulator
 - Verify security rules with Firebase emulator before production deployment
+
+## Current Deployment Status
+
+**Firebase Backend (Production):**
+- Project ID: `looklab-7acba`
+- Cloud Functions: ✅ Deployed (generateOutfit, uploadClothingItem, deleteUserData)
+- Firestore Rules: ✅ Deployed
+- Storage Rules: ✅ Deployed
+- Authentication: ✅ Apple Sign-In enabled
+
+**iOS App:**
+- Bundle ID: `com.us.looklab` (Apple approved)
+- Firebase Configuration: ✅ GoogleService-Info.plist included
+- Current Mode: Standalone (UI testing without Firebase)
+- Ready to switch to full Firebase integration
+
+**Git Repository:**
+- GitHub: https://github.com/utkusen/looklab-dev
+- Structure: Unified repo containing both iOS app and Firebase backend
+- Branch: `main`

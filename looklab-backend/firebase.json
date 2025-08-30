@@ -13,6 +13,32 @@
   "storage": {
     "rules": "storage.rules"
   },
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/generateOutfit",
+        "function": "generateOutfit"
+      },
+      {
+        "source": "/api/uploadClothingItem",
+        "function": "uploadClothingItem"
+      },
+      {
+        "source": "/api/deleteUserData",
+        "function": "deleteUserData"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
   "emulators": {
     "functions": {
       "port": 5001

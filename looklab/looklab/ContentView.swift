@@ -10,7 +10,7 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    // @StateObject private var firebaseManager = FirebaseManager.shared // Temporarily disabled
+    @StateObject private var firebaseManager = FirebaseManager.shared
     @Query private var users: [User]
     
     var body: some View {
@@ -19,15 +19,18 @@ struct ContentView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                // Always show onboarding until Firebase is set up
-                OnboardingView()
+                if firebaseManager.isSignedIn {
+                    MainTabView()
+                } else {
+                    OnboardingView()
+                }
             }
         }
     }
 }
 
 struct OnboardingView: View {
-    // @StateObject private var appleAuthManager = AppleAuthManager.shared // Temporarily disabled
+    @StateObject private var appleAuthManager = AppleAuthManager.shared
     
     var body: some View {
         VStack(spacing: 32) {
@@ -52,11 +55,17 @@ struct OnboardingView: View {
             
             VStack(spacing: 16) {
                 Button(action: {
-                    print("Apple Sign-In pressed - Set up Firebase to enable authentication")
+                    appleAuthManager.signInWithApple()
                 }) {
                     HStack {
-                        Image(systemName: "applelogo")
-                            .font(.title2)
+                        if appleAuthManager.isLoading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .theme.background))
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "applelogo")
+                                .font(.title2)
+                        }
                         Text("Continue with Apple")
                             .font(.theme.headline)
                     }
@@ -66,6 +75,7 @@ struct OnboardingView: View {
                     .background(Color.theme.textPrimary)
                     .cornerRadius(16)
                 }
+                .disabled(appleAuthManager.isLoading)
                 .padding(.horizontal, 24)
             }
             .padding(.bottom, 40)
