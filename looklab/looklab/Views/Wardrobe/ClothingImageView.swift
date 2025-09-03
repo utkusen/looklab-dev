@@ -90,7 +90,7 @@ struct LargeClothingImageView: View {
         VStack(alignment: .leading, spacing: 12) {
             BundleImageView(
                 imagePath: item.imagePath,
-                size: CGSize(width: 160, height: 180),
+                size: CGSize(width: 180, height: 200),
                 cornerRadius: 16,
                 placeholder: item.category.iconName
             )
@@ -105,7 +105,8 @@ struct LargeClothingImageView: View {
                 .font(.theme.callout)
                 .fontWeight(.medium)
                 .foregroundColor(Color.theme.textPrimary)
-                .lineLimit(2)
+                .lineLimit(1)
+                .truncationMode(.tail)
                 .multilineTextAlignment(.leading)
         }
         .scaleEffect(isSelected ? 0.98 : 1.0)
