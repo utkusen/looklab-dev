@@ -1,0 +1,23 @@
+---
+globs: looklab-backend/**/*.ts
+description: Conventions for Firebase Functions TypeScript backend
+---
+
+### Runtime and tooling
+- Node 18 (see `engines.node`). TypeScript 5.x; compile with `tsc` to `lib/`.
+- Entrypoint is `src/index.ts`; export HTTPS callable functions.
+
+### Code style
+- Prefer explicit interfaces for request/response payloads.
+- Validate `context.auth` for callable functions; return `HttpsError` on failures.
+- Use early returns; avoid deep nesting. Log meaningful errors.
+
+### Vertex AI usage
+- Initialize `VertexAI` with `project` from `GOOGLE_CLOUD_PROJECT` and `location` `us-central1`.
+- Model: `gemini-2.5-flash-image-preview`. Stream responses; handle/upload outputs to Storage.
+
+### Firestore and Storage
+- Use batched writes for multi-doc deletes.
+- Store timestamps via `FieldValue.serverTimestamp()`.
+- For public assets intended for client fetch, either signed URLs or `makePublic()` with caution.
+

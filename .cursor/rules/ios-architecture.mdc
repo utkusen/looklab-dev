@@ -1,0 +1,17 @@
+---
+globs: looklab/**/*.swift
+description: iOS architecture principles for LookLab
+---
+
+### Principles
+- Keep SwiftUI views declarative and stateless; separate concerns via `Services`.
+- Use SwiftData for persistence with models in `Models/`.
+- Navigation/state uses SwiftUI + SwiftData; avoid global singletons (Firebase managers allowed).
+
+### Features
+- Wardrobe: capture/upload or pick from gallery, typed categories.
+- Build a Look: select items + background (elevator, street, restaurant, cafe, plain, beach) → Build.
+- My Looks: custom categories; Re-create opens Build with selected items.
+- Calendar: 7‑day planner; attach looks; show weather/feels‑like by location.
+- Profile: manage face/body photos and sizes; multiple body photos; delete account.
+

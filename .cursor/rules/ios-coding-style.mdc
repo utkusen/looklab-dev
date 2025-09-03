@@ -1,0 +1,25 @@
+---
+globs: "looklab/**/*.swift"
+description: Swift coding style and conventions for the iOS app
+---
+
+### Naming
+- Types use PascalCase; variables, funcs use camelCase.
+- Prefer clear, full words over abbreviations.
+
+### Formatting
+- 4‑space indentation. Match existing style; avoid unrelated reformatting.
+- Prefer multi-line for readability over dense one-liners.
+
+### Views and state
+- Place SwiftUI views under `Views/<Feature>/<Name>View.swift`.
+- Keep views stateless; move IO/business logic into `Services`.
+- Use SwiftData for model persistence; avoid singletons except Firebase managers.
+
+### Control flow and errors
+- Use guard clauses, handle edge cases first, avoid deep nesting.
+- Don’t catch errors without meaningful handling.
+
+### Comments
+- Comment the “why”, not the “how”. Keep them concise; avoid trivial comments.
+

@@ -1,0 +1,10 @@
+---
+description: Commits and PR expectations
+---
+
+### Commits
+- Imperative, concise messages (e.g., "Fix Firebase initialization order").
+
+### Pull Requests
+- Include description, test steps, and screenshots for UI changes.
+

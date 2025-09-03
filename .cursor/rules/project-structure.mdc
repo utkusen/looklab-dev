@@ -1,0 +1,21 @@
+---
+alwaysApply: true
+description: Repository structure and key entry points
+---
+
+### Layout
+- iOS app: `looklab/` with `Models`, `Views`, `Services`, `Theme`, `Utilities`.
+- Backend (Firebase Functions): `looklab-backend/` with source in `src/index.ts` → built to `lib/`.
+
+### Entry points
+- iOS: `looklab/looklab/looklabApp.swift` initializes Firebase and SwiftData. See [looklabApp.swift](mdc:looklab/looklab/looklabApp.swift).
+- Backend: Cloud Functions defined in [src/index.ts](mdc:looklab-backend/src/index.ts), compiled to `lib/index.js`.
+
+### Config and rules
+- Firebase config: `looklab-backend/firebase.json`.
+- Firestore rules: [firestore.rules](mdc:looklab-backend/firestore.rules).
+- Storage rules: [storage.rules](mdc:looklab-backend/storage.rules).
+
+### Tests
+- iOS unit and UI tests under `looklab/looklabTests` and `looklab/looklabUITests`.
+

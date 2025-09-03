@@ -16,12 +16,12 @@ struct BundleImageView: View {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: size.width * 0.8, height: size.height * 0.8)
+                    .frame(width: size.width * 0.96, height: size.height * 0.96)
             } else {
                 // Fallback to placeholder
                 VStack(spacing: size.height * 0.05) {
                     Image(systemName: placeholder)
-                        .font(.system(size: size.width * 0.15, weight: .medium))
+                        .font(.system(size: size.width * 0.18, weight: .medium))
                         .foregroundColor(Color.theme.accent.opacity(0.8))
                     
                     if size.height > 100 {
@@ -93,30 +93,46 @@ struct ClothingImageBackground: View {
     
     var body: some View {
         ZStack {
-            // Base gradient background
-            RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(
-                    RadialGradient(
-                        gradient: Gradient(stops: [
-                            .init(color: Color.white.opacity(0.95), location: 0.0),
-                            .init(color: Color.white.opacity(0.85), location: 0.4),
-                            .init(color: Color.theme.surface.opacity(0.9), location: 0.8),
-                            .init(color: Color.theme.surfaceSecondary.opacity(0.8), location: 1.0)
-                        ]),
-                        center: UnitPoint(x: 0.3, y: 0.3),
-                        startRadius: size.width * 0.1,
-                        endRadius: size.width * 0.8
-                    )
-                )
-            
-            // Subtle texture overlay for premium feel
+            // Base: modern dark card gradient (avoids harsh light patches in dark mode)
             RoundedRectangle(cornerRadius: cornerRadius)
                 .fill(
                     LinearGradient(
                         gradient: Gradient(stops: [
-                            .init(color: Color.theme.accent.opacity(0.03), location: 0.0),
-                            .init(color: Color.clear, location: 0.3),
-                            .init(color: Color.theme.primary.opacity(0.02), location: 1.0)
+                            .init(color: Color.theme.surfaceSecondary.opacity(0.95), location: 0.0),
+                            .init(color: Color.theme.surface.opacity(0.98), location: 1.0)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            
+            // Gentle light veil to lift overall tone for dark garments
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .fill(Color.white.opacity(0.03))
+            
+            // Soft central highlight to lift dark garments from the background
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .fill(
+                    RadialGradient(
+                        gradient: Gradient(stops: [
+                            .init(color: Color.white.opacity(0.10), location: 0.0),
+                            .init(color: Color.clear, location: 1.0)
+                        ]),
+                        center: UnitPoint(x: 0.5, y: 0.45),
+                        startRadius: 0,
+                        endRadius: max(size.width, size.height) * 0.95
+                    )
+                )
+                .blendMode(.plusLighter)
+            
+            // Subtle directional sheen for a premium feel
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(stops: [
+                            .init(color: Color.white.opacity(0.06), location: 0.0),
+                            .init(color: Color.white.opacity(0.02), location: 0.35),
+                            .init(color: Color.white.opacity(0.03), location: 1.0)
                         ]),
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing

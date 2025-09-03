@@ -1,0 +1,12 @@
+---
+description: Asset organization and naming
+---
+
+### Naming
+- Images use `img_*`; symbols use `ic_*`. Prefer SF Symbols for icons.
+- Sample clothing and face assets live in `Assets.xcassets` with descriptive names.
+
+### Structure
+- Clothing images for gallery live under `looklab/looklab/ClothingImages/men|women/...`.
+- App asset catalogs live under `looklab/looklab/Assets.xcassets/`.
+

@@ -1,0 +1,15 @@
+---
+description: Security and secrets handling
+---
+
+### Secrets
+- Never commit real `GoogleService-Info.plist` or any credentials/private keys.
+- Use environment variables and Firebase configs for secrets. Rotate credentials if leaked.
+
+### Firebase rules
+- Validate Firestore and Storage rules using emulators before deploy.
+- Limit public access to Storage; prefer signed URLs over `makePublic()` where feasible.
+
+### Data deletion
+- Provide callable to delete all user data (Firestore docs, Storage files).
+

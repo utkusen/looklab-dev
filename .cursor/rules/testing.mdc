@@ -1,0 +1,17 @@
+---
+description: Testing priorities and commands
+---
+
+### iOS UI priorities
+- Onboarding flow
+- Wardrobe upload
+- Build a Look flow
+- Re-create flow from My Looks
+
+### Commands
+- iOS tests: `xcodebuild -project looklab/looklab.xcodeproj -scheme looklab -destination 'platform=iOS Simulator,name=iPhone 16' test`
+- Backend tests (if present): `cd looklab-backend && npm test` (or jest via configured scripts)
+
+### Naming
+- iOS test files: `FeatureNameTests.swift` under `looklab/looklabTests` and `looklab/looklabUITests`.
+

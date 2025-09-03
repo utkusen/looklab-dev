@@ -1,0 +1,16 @@
+---
+description: Build, run, and test commands for iOS and backend
+globs: ""
+---
+
+### iOS
+- Build: `xcodebuild -project looklab/looklab.xcodeproj -scheme looklab build`
+- Tests: `xcodebuild -project looklab/looklab.xcodeproj -scheme looklab -destination 'platform=iOS Simulator,name=iPhone 16' test`
+
+### Backend (Firebase Functions)
+- From `looklab-backend/`:
+  - Install deps: `npm ci`
+  - Build: `npm run build`
+  - Emulators: `npm run serve`
+  - Deploy: `npm run deploy`
+

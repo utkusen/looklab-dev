@@ -1,0 +1,15 @@
+---
+description: Vertex AI usage for outfit generation
+---
+
+### Model
+- Use `gemini-2.5-flash-image-preview` via Vertex AI preview client.
+- Provide clothing images and optional user body photo as `inlineData` parts.
+
+### Prompting
+- System prompt describes stylist role, lists clothing items, states background, and body reference.
+- Generate 3 variations; upload results to Cloud Storage and return URLs.
+
+### Initialization
+- Create `VertexAI` with project from `GOOGLE_CLOUD_PROJECT` and `location` `us-central1`.
+
