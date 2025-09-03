@@ -626,8 +626,7 @@ struct MainTabView: View {
 
 struct WardrobeView: View {
     var body: some View {
-        Text("Wardrobe")
-            .foregroundColor(.theme.textPrimary)
+        MyWardrobeView()
     }
 }
 
