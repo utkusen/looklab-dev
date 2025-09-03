@@ -83,7 +83,7 @@ struct EnhancedClothingItemCard: View {
 
 // Large size variant for gallery
 struct LargeClothingImageView: View {
-    let item: GalleryItem
+    let item: ClothingGalleryItem
     let isSelected: Bool
     
     var body: some View {

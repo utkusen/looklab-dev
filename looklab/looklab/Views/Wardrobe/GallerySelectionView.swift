@@ -6,72 +6,19 @@ struct GallerySelectionView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @State private var selectedCategory: ClothingCategory = .tops
-    @State private var selectedItem: GalleryItem?
+    @State private var selectedItem: ClothingGalleryItem?
     
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // Category Selector
-                CategorySelector(
-                    selectedCategory: $selectedCategory,
-                    categories: ClothingCategory.allCases
-                )
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                categorySelector
                 
                 Divider()
                     .background(Color.theme.border)
                 
-                // Gallery Grid
-                ScrollView {
-                    LazyVGrid(columns: [
-                        GridItem(.flexible(), spacing: 12),
-                        GridItem(.flexible(), spacing: 12)
-                    ], spacing: 16) {
-                        ForEach(galleryItems, id: \.id) { item in
-                            Button(action: {
-                                selectedItem = item
-                            }) {
-                                LargeClothingImageView(
-                                    item: item,
-                                    isSelected: selectedItem?.id == item.id
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 20)
-                }
-                .background(Color.theme.background)
+                galleryGrid
                 
-                // Add Button
-                if let selectedItem = selectedItem {
-                    VStack(spacing: 0) {
-                        Divider()
-                            .background(Color.theme.border)
-                        
-                        Button(action: {
-                            addItemToWardrobe(selectedItem)
-                        }) {
-                            HStack {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.system(size: 20))
-                                
-                                Text("Add to Wardrobe")
-                                    .font(.theme.headline)
-                            }
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(Color.theme.accent)
-                            .cornerRadius(16)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 16)
-                        .background(Color.theme.surface)
-                    }
-                }
+                addButton
             }
             .background(Color.theme.background.ignoresSafeArea())
             .navigationTitle("Choose from Gallery")
@@ -87,11 +34,74 @@ struct GallerySelectionView: View {
         }
     }
     
-    private var galleryItems: [GalleryItem] {
+    private var categorySelector: some View {
+        CategorySelector(
+            selectedCategory: $selectedCategory,
+            categories: ClothingCategory.allCases
+        )
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+    
+    private var galleryGrid: some View {
+        ScrollView {
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12)
+            ], spacing: 16) {
+                ForEach(galleryItems, id: \.id) { item in
+                    Button(action: {
+                        selectedItem = item
+                    }) {
+                        LargeClothingImageView(
+                            item: item,
+                            isSelected: selectedItem?.id == item.id
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 20)
+        }
+        .background(Color.theme.background)
+    }
+    
+    @ViewBuilder
+    private var addButton: some View {
+        if let selectedItem = selectedItem {
+            VStack(spacing: 0) {
+                Divider()
+                    .background(Color.theme.border)
+                
+                Button(action: {
+                    addItemToWardrobe(selectedItem)
+                }) {
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 20))
+                        
+                        Text("Add to Wardrobe")
+                            .font(.theme.headline)
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.theme.accent)
+                    .cornerRadius(16)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+                .background(Color.theme.surface)
+            }
+        }
+    }
+    
+    private var galleryItems: [ClothingGalleryItem] {
         ClothingGallery.getGalleryItems(for: user.fashionInterest, category: selectedCategory)
     }
     
-    private func addItemToWardrobe(_ galleryItem: GalleryItem) {
+    private func addItemToWardrobe(_ galleryItem: ClothingGalleryItem) {
         let clothingItem = ClothingItem(
             userID: user.id,
             name: galleryItem.name,

@@ -1,7 +1,7 @@
 import Foundation
 
 struct ClothingGallery {
-    static func getGalleryItems(for interest: FashionInterest, category: ClothingCategory) -> [GalleryItem] {
+    static func getGalleryItems(for interest: FashionInterest, category: ClothingCategory) -> [ClothingGalleryItem] {
         return getSampleItems(for: interest, category: category)
     }
     
@@ -24,11 +24,11 @@ struct ClothingGallery {
         }
     }
     
-    private static func getSampleItems(for interest: FashionInterest, category: ClothingCategory) -> [GalleryItem] {
+    private static func getSampleItems(for interest: FashionInterest, category: ClothingCategory) -> [ClothingGalleryItem] {
         let sampleItems = getSampleItemsForCategory(interest: interest, category: category)
         
         return sampleItems.map { item in
-            GalleryItem(
+            ClothingGalleryItem(
                 id: UUID().uuidString,
                 imagePath: item.imageName,
                 name: item.displayName,
@@ -100,7 +100,7 @@ struct ClothingGallery {
     }
 }
 
-struct GalleryItem: Identifiable, Hashable {
+struct ClothingGalleryItem: Identifiable, Hashable {
     let id: String
     let imagePath: String
     let name: String
