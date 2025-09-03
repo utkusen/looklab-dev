@@ -624,11 +624,6 @@ struct MainTabView: View {
     }
 }
 
-struct WardrobeView: View {
-    var body: some View {
-        MyWardrobeView()
-    }
-}
 
 struct BuildLookView: View {
     var body: some View {

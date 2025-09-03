@@ -30,21 +30,21 @@ final class ClothingItem {
 enum ClothingCategory: String, CaseIterable, Codable {
     case tops = "tops"
     case bottoms = "bottoms"
-    case dresses = "dresses"
+    case fullbody = "fullbody"
     case outerwear = "outerwear"
     case shoes = "shoes"
     case accessories = "accessories"
-    case undergarments = "undergarments"
+    case head = "head"
     
     var displayName: String {
         switch self {
         case .tops: return "Tops"
         case .bottoms: return "Bottoms"
-        case .dresses: return "Dresses"
-        case .outerwear: return "Outerwear"
+        case .fullbody: return "Full Body"
+        case .outerwear: return "Outwear"
         case .shoes: return "Shoes"
         case .accessories: return "Accessories"
-        case .undergarments: return "Undergarments"
+        case .head: return "Head"
         }
     }
     
@@ -52,11 +52,11 @@ enum ClothingCategory: String, CaseIterable, Codable {
         switch self {
         case .tops: return "tshirt"
         case .bottoms: return "rectangle"
-        case .dresses: return "dress"
+        case .fullbody: return "dress"
         case .outerwear: return "coat"
         case .shoes: return "shoe"
         case .accessories: return "eyeglasses"
-        case .undergarments: return "undergarment"
+        case .head: return "hat"
         }
     }
 }
