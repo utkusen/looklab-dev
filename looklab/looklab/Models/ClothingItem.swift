@@ -51,12 +51,12 @@ enum ClothingCategory: String, CaseIterable, Codable {
     var iconName: String {
         switch self {
         case .tops: return "tshirt"
-        case .bottoms: return "rectangle"
-        case .fullbody: return "dress"
+        case .bottoms: return "figure.taichi"
+        case .fullbody: return "figure"
         case .outerwear: return "coat"
         case .shoes: return "shoe"
         case .accessories: return "eyeglasses"
-        case .head: return "hat"
+        case .head: return "hat.cap.fill"
         }
     }
 }

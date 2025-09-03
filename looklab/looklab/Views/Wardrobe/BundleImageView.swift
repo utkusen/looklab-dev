@@ -65,12 +65,25 @@ struct BundleImageView: View {
         }
         
         // If that fails, try loading the data first (for WebP support)
-        guard let imageData = NSData(contentsOfFile: fullPath) else {
-            print("Could not load image data from: \(fullPath)")
-            return nil
+        if let imageData = NSData(contentsOfFile: fullPath) {
+            return UIImage(data: imageData as Data)
         }
         
-        return UIImage(data: imageData as Data)
+        // Fallback: bundle may have flattened resources (no ClothingImages dirs).
+        // Try to find the file by its lastPathComponent anywhere in the bundle.
+        let filename = (path as NSString).lastPathComponent
+        if let url = (Bundle.main.urls(forResourcesWithExtension: "webp", subdirectory: nil) ?? [])
+            .first(where: { $0.lastPathComponent == filename }) {
+            if let img = UIImage(contentsOfFile: url.path) {
+                return img
+            }
+            if let data = try? Data(contentsOf: url) {
+                return UIImage(data: data)
+            }
+        }
+        
+        print("Could not load image from bundle for path: \(path)")
+        return nil
     }
 }
 

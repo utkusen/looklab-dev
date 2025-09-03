@@ -54,7 +54,7 @@ struct ClothingGallery {
             
             let webpFiles = files.filter { $0.hasSuffix(".webp") && !$0.hasPrefix(".") }
             
-            return webpFiles.prefix(8).map { filename in
+            return webpFiles.map { filename in
                 let imagePath = "ClothingImages/\(genderPath)/\(categoryPath)/\(filename)"
                 return SampleItem(
                     imageName: imagePath,
@@ -62,8 +62,25 @@ struct ClothingGallery {
                 )
             }
         } catch {
-            print("Error reading directory \(fullPath): \(error)")
-            return []
+            // Fallback: If the folder structure isn't preserved in the app bundle,
+            // scan all bundled .webp files and filter by filename prefix.
+            print("Error reading directory \(fullPath): \(error). Falling back to filename-based search.")
+            let allWebPURLs = Bundle.main.urls(forResourcesWithExtension: "webp", subdirectory: nil) ?? []
+            let expectedPrefix = "\(genderPath)_\(categoryPath)_"
+            let matching = allWebPURLs.filter { $0.lastPathComponent.hasPrefix(expectedPrefix) }
+            
+            // Map found URLs to relative paths within the bundle so they can be loaded via resourcePath.
+            let resourcePrefix = resourcePath.hasSuffix("/") ? resourcePath : resourcePath + "/"
+            return matching.map { url in
+                let absolutePath = url.path
+                let relativePath = absolutePath.hasPrefix(resourcePrefix)
+                    ? String(absolutePath.dropFirst(resourcePrefix.count))
+                    : url.lastPathComponent
+                return SampleItem(
+                    imageName: relativePath,
+                    displayName: formatItemName(url.lastPathComponent)
+                )
+            }
         }
     }
     
