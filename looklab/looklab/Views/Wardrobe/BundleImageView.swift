@@ -16,7 +16,15 @@ struct BundleImageView: View {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: size.width * 0.96, height: size.height * 0.96)
+                    .frame(width: size.width, height: size.height)
+                    .compositingGroup()
+                    // Premium, subtle separation shadow
+                    .shadow(
+                        color: Color.black.opacity(0.28),
+                        radius: max(size.width, size.height) * 0.05,
+                        x: 0,
+                        y: max(size.width, size.height) * 0.02
+                    )
             } else {
                 // Fallback to placeholder
                 VStack(spacing: size.height * 0.05) {
@@ -34,7 +42,7 @@ struct BundleImageView: View {
             }
         }
         .frame(width: size.width, height: size.height)
-        .cornerRadius(cornerRadius)
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
         .overlay(
             RoundedRectangle(cornerRadius: cornerRadius)
                 .stroke(
@@ -115,12 +123,12 @@ struct ClothingImageBackground: View {
                 .fill(
                     RadialGradient(
                         gradient: Gradient(stops: [
-                            .init(color: Color.white.opacity(0.10), location: 0.0),
+                            .init(color: Color.white.opacity(0.14), location: 0.0),
                             .init(color: Color.clear, location: 1.0)
                         ]),
                         center: UnitPoint(x: 0.5, y: 0.45),
                         startRadius: 0,
-                        endRadius: max(size.width, size.height) * 0.95
+                        endRadius: max(size.width, size.height) * 1.05
                     )
                 )
                 .blendMode(.plusLighter)
