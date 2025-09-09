@@ -85,6 +85,7 @@ struct EnhancedClothingItemCard: View {
 struct LargeClothingImageView: View {
     let item: ClothingGalleryItem
     let isSelected: Bool
+    var showCategoryBadge: Bool = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -117,6 +118,23 @@ struct LargeClothingImageView: View {
                     .frame(width: 22, height: 22)
                     .padding(8)
                     .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .overlay(alignment: .bottomLeading) {
+                if showCategoryBadge {
+                    Text(item.category.displayName)
+                        .font(.theme.caption2)
+                        .foregroundColor(Color.theme.textSecondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.theme.surface.opacity(0.95))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.theme.border.opacity(0.5), lineWidth: 1)
+                        )
+                        .cornerRadius(10)
+                        .padding(8)
+                        .transition(.opacity)
                 }
             }
             

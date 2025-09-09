@@ -8,6 +8,7 @@ struct GallerySelectionView: View {
     @Query private var wardrobeItems: [ClothingItem]
     @State private var selectedCategory: ClothingCategory = .tops
     @State private var selectedItems: Set<ClothingGalleryItem> = []
+    @State private var searchText: String = ""
     
     var body: some View {
         NavigationView {
@@ -46,6 +47,25 @@ struct GallerySelectionView: View {
     
     private var galleryGrid: some View {
         ScrollView {
+            if galleryItems.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 36))
+                        .foregroundColor(Color.theme.textTertiary)
+                        .opacity(0.7)
+                    Text("No results")
+                        .font(.theme.callout)
+                        .foregroundColor(Color.theme.textSecondary)
+                    if !searchText.isEmpty {
+                        Text("Try a different search term")
+                            .font(.theme.caption1)
+                            .foregroundColor(Color.theme.textTertiary)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 48)
+                .padding(.horizontal, 16)
+            } else {
             LazyVGrid(columns: [
                 GridItem(.flexible(), spacing: 12),
                 GridItem(.flexible(), spacing: 12)
@@ -56,16 +76,23 @@ struct GallerySelectionView: View {
                     }) {
                         LargeClothingImageView(
                             item: item,
-                            isSelected: selectedItems.contains(item)
+                            isSelected: selectedItems.contains(item),
+                            showCategoryBadge: isSearching
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 20)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 20)
+            }
         }
         .background(Color.theme.background)
+        .searchable(
+            text: $searchText,
+            placement: .navigationBarDrawer(displayMode: .always),
+            prompt: Text("Search clothes")
+        )
     }
     
     @ViewBuilder
@@ -100,13 +127,33 @@ struct GallerySelectionView: View {
     }
     
     private var galleryItems: [ClothingGalleryItem] {
-        // Items already in the user's wardrobe should not be shown
-        let all = ClothingGallery.getGalleryItems(for: user.fashionInterest, category: selectedCategory)
         let existingPaths = Set(wardrobeItems
-            .filter { $0.userID == user.id && $0.category == selectedCategory }
+            .filter { $0.userID == user.id }
             .compactMap { $0.imageURL }
         )
-        return all.filter { !existingPaths.contains($0.imagePath) }
+
+        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            let perCategory = ClothingGallery.getGalleryItems(for: user.fashionInterest, category: selectedCategory)
+            return perCategory.filter { !existingPaths.contains($0.imagePath) }
+        } else {
+            // Aggregate across all categories for cross-category search
+            var all: [ClothingGalleryItem] = []
+            for cat in ClothingCategory.allCases {
+                let items = ClothingGallery.getGalleryItems(for: user.fashionInterest, category: cat)
+                all.append(contentsOf: items)
+            }
+            let unseen = all.filter { !existingPaths.contains($0.imagePath) }
+            let query = trimmed.lowercased()
+            return unseen.filter { item in
+                let hay = (item.name + " " + item.imagePath).lowercased()
+                return hay.contains(query)
+            }
+        }
+    }
+
+    private var isSearching: Bool {
+        !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     
     private func toggleSelection(_ item: ClothingGalleryItem) {
