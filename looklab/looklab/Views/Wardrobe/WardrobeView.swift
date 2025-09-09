@@ -88,6 +88,7 @@ struct CategorySection: View {
             if items.isEmpty {
                 EmptyStateView(category: category)
             } else {
+                // Three columns that auto-fit cards without overlap
                 LazyVGrid(columns: [
                     GridItem(.flexible(), spacing: 12),
                     GridItem(.flexible(), spacing: 12),

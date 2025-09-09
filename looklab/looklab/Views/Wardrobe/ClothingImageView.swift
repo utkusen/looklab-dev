@@ -26,21 +26,27 @@ struct ClothingImageView: View {
 }
 
 
-// Enhanced ClothingItemCard with better image display
+// Enhanced ClothingItemCard with responsive sizing to grid cell
 struct EnhancedClothingItemCard: View {
     let item: ClothingItem
-    var cardSize: CGSize = CGSize(width: 120, height: 160)
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Enhanced image container
-            ClothingImageView(
-                imagePath: item.imageURL,
-                category: item.category,
-                size: CGSize(width: cardSize.width, height: cardSize.height * 0.7),
-                cornerRadius: 12
-            )
-            
+            // Responsive image container that matches the grid cell width
+            ZStack { Color.clear }
+                .aspectRatio(1, contentMode: .fit)
+                .overlay {
+                    GeometryReader { geo in
+                        let w = geo.size.width
+                        ClothingImageView(
+                            imagePath: item.imageURL,
+                            category: item.category,
+                            size: CGSize(width: w, height: w),
+                            cornerRadius: 12
+                        )
+                    }
+                }
+
             // Item info with better typography
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.name)
@@ -48,27 +54,14 @@ struct EnhancedClothingItemCard: View {
                     .fontWeight(.semibold)
                     .foregroundColor(Color.theme.textPrimary)
                     .lineLimit(1)
-                
-                HStack {
-                    if let brand = item.brand {
-                        Text(brand)
-                            .font(.theme.caption2)
-                            .foregroundColor(Color.theme.textSecondary)
-                            .lineLimit(1)
-                    }
-                    
-                    Spacer()
-                    
-                    if item.isFromGallery {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 8))
-                            .foregroundColor(Color.theme.accent)
-                    }
+                if let brand = item.brand {
+                    Text(brand)
+                        .font(.theme.caption2)
+                        .foregroundColor(Color.theme.textSecondary)
+                        .lineLimit(1)
                 }
             }
-            .padding(.horizontal, 4)
         }
-        .frame(width: cardSize.width)
         .padding(8)
         .background(Color.theme.surface)
         .cornerRadius(16)
@@ -78,6 +71,7 @@ struct EnhancedClothingItemCard: View {
             x: 0,
             y: 2
         )
+        .frame(maxWidth: .infinity)
     }
 }
 
