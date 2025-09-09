@@ -696,23 +696,16 @@ struct SampleFaceGalleryView: View {
                                         presentationMode.wrappedValue.dismiss()
                                     }
                                 }) {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color.theme.surface)
-                                            .frame(height: 140)
-                                        
-                                        if let uiImage = UIImage(contentsOfFile: url.path) {
-                                            Image(uiImage: uiImage)
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(maxWidth: .infinity, maxHeight: 120)
-                                                .padding(12)
-                                        } else {
-                                            // Fallback if image fails to load
-                                            Image(systemName: "person.crop.circle")
-                                                .font(.system(size: 40))
-                                                .foregroundColor(.theme.textSecondary)
-                                        }
+                                    if let uiImage = UIImage(contentsOfFile: url.path) {
+                                        Image(uiImage: uiImage)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(maxHeight: 160)
+                                    } else {
+                                        // Fallback if image fails to load
+                                        Image(systemName: "person.crop.circle")
+                                            .font(.system(size: 40))
+                                            .foregroundColor(.theme.textSecondary)
                                     }
                                 }
                                 .buttonStyle(PlainButtonStyle())
