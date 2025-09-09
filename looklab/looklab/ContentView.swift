@@ -525,7 +525,7 @@ struct BodyInfoView: View {
             ImagePicker(selectedImage: $selectedBodyImage, sourceType: .camera)
         }
         .sheet(isPresented: $showingSampleGallery) {
-            SampleBodyGalleryView(selectedImage: $selectedBodyImage)
+            SampleBodyGalleryView(selectedImage: $selectedBodyImage, interest: user.fashionInterest)
         }
     }
 }
@@ -758,29 +758,20 @@ struct SampleFaceGalleryView: View {
             collectFromFolder("women-faces")
         }
 
-        // Fallback: scan bundle for likely face files while excluding clothing
+        // Fallback: scan bundle for face files using explicit prefixes to avoid collisions
         if urls.isEmpty, let root = resourceRoot, let e = fm.enumerator(at: root, includingPropertiesForKeys: nil) {
-            let excludePrefixesMen = ["men_top_", "men_bottom_", "men_shoe_", "men_outwear", "men_accessories", "men_head_", "men_fullbody_"]
-            let excludePrefixesWomen = ["women_top_", "women_bottom_", "women_shoe_", "women_outwear", "women_accessories", "women_head_", "women_fullbody_"]
             for case let fileURL as URL in e {
                 if !exts.contains(fileURL.pathExtension.lowercased()) { continue }
-                let name = fileURL.lastPathComponent.lowercased()
                 let pathLower = fileURL.path.lowercased()
                 if pathLower.contains("clothingimages/") { continue }
                 switch interest {
                 case .male:
-                    if name.hasPrefix("men_") && !excludePrefixesMen.contains(where: { name.hasPrefix($0) }) {
-                        urls.append(fileURL)
-                    }
+                    if fileURL.lastPathComponent.lowercased().hasPrefix("face_men_") { urls.append(fileURL) }
                 case .female:
-                    if name.hasPrefix("women_") && !excludePrefixesWomen.contains(where: { name.hasPrefix($0) }) {
-                        urls.append(fileURL)
-                    }
+                    if fileURL.lastPathComponent.lowercased().hasPrefix("face_women_") { urls.append(fileURL) }
                 case .everything, .notSpecified:
-                    if (name.hasPrefix("men_") && !excludePrefixesMen.contains(where: { name.hasPrefix($0) })) ||
-                       (name.hasPrefix("women_") && !excludePrefixesWomen.contains(where: { name.hasPrefix($0) })) {
-                        urls.append(fileURL)
-                    }
+                    let name = fileURL.lastPathComponent.lowercased()
+                    if name.hasPrefix("face_men_") || name.hasPrefix("face_women_") { urls.append(fileURL) }
                 }
             }
         }
@@ -792,96 +783,65 @@ struct SampleFaceGalleryView: View {
 
 struct SampleBodyGalleryView: View {
     @Binding var selectedImage: UIImage?
+    let interest: FashionInterest
     @Environment(\.presentationMode) var presentationMode
-    
+
+    @State private var bodyURLs: [URL] = []
+
     var body: some View {
         NavigationView {
-            VStack(spacing: 24) {
+            VStack(spacing: 16) {
                 Text("Select a Sample Body")
                     .font(.theme.title2)
                     .foregroundColor(.theme.textPrimary)
                     .padding(.top, 20)
-                
-                Text("Choose from our sample body types below")
+
+                Text("Choose from our sample bodies below")
                     .font(.theme.body)
                     .foregroundColor(.theme.textSecondary)
                     .multilineTextAlignment(.center)
-                
-                Spacer()
-                
-                // Sample body grid
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 2), spacing: 16) {
-                    // Sample body 1
-                    Button(action: {
-                        // Create a sample body image
-                        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 200, height: 300))
-                        let sampleImage = renderer.image { context in
-                            UIColor.systemGray3.setFill()
-                            context.fill(CGRect(x: 0, y: 0, width: 200, height: 300))
-                            
-                            let config = UIImage.SymbolConfiguration(pointSize: 80, weight: .regular)
-                            let personIcon = UIImage(systemName: "person.crop.rectangle.fill", withConfiguration: config)
-                            personIcon?.draw(in: CGRect(x: 60, y: 110, width: 80, height: 80))
-                        }
-                        
-                        selectedImage = sampleImage
-                        presentationMode.wrappedValue.dismiss()
-                    }) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.theme.surface)
-                                .frame(height: 160)
-                            
-                            VStack(spacing: 8) {
-                                Image(systemName: "person.crop.rectangle.fill")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.theme.textSecondary)
-                                
-                                Text("Sample Body 1")
-                                    .font(.theme.caption1)
-                                    .foregroundColor(.theme.textSecondary)
+                    .padding(.horizontal, 24)
+
+                if bodyURLs.isEmpty {
+                    VStack(spacing: 8) {
+                        Text("No sample bodies found")
+                            .font(.theme.headline)
+                            .foregroundColor(.theme.textSecondary)
+                        Text("Ensure 'men-bodies' and 'women-bodies' are folder references and included in the app target.")
+                            .font(.theme.caption1)
+                            .foregroundColor(.theme.textSecondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
+                    }
+                    .padding(.top, 32)
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 2), spacing: 16) {
+                            ForEach(bodyURLs, id: \.self) { url in
+                                Button(action: {
+                                    if let img = UIImage(contentsOfFile: url.path) {
+                                        selectedImage = img
+                                        presentationMode.wrappedValue.dismiss()
+                                    }
+                                }) {
+                                    if let uiImage = UIImage(contentsOfFile: url.path) {
+                                        Image(uiImage: uiImage)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(maxHeight: 260)
+                                    } else {
+                                        Image(systemName: "person.crop.rectangle")
+                                            .font(.system(size: 40))
+                                            .foregroundColor(.theme.textSecondary)
+                                    }
+                                }
+                                .buttonStyle(PlainButtonStyle())
                             }
                         }
+                        .padding(.horizontal, 24)
+                        .padding(.top, 8)
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    // Sample body 2
-                    Button(action: {
-                        // Create a different sample body image
-                        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 200, height: 300))
-                        let sampleImage = renderer.image { context in
-                            UIColor.systemBlue.withAlphaComponent(0.2).setFill()
-                            context.fill(CGRect(x: 0, y: 0, width: 200, height: 300))
-                            
-                            let config = UIImage.SymbolConfiguration(pointSize: 80, weight: .regular)
-                            let personIcon = UIImage(systemName: "person.crop.rectangle", withConfiguration: config)
-                            personIcon?.draw(in: CGRect(x: 60, y: 110, width: 80, height: 80))
-                        }
-                        
-                        selectedImage = sampleImage
-                        presentationMode.wrappedValue.dismiss()
-                    }) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.theme.surface)
-                                .frame(height: 160)
-                            
-                            VStack(spacing: 8) {
-                                Image(systemName: "person.crop.rectangle")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.theme.primary)
-                                
-                                Text("Sample Body 2")
-                                    .font(.theme.caption1)
-                                    .foregroundColor(.theme.textSecondary)
-                            }
-                        }
-                    }
-                    .buttonStyle(PlainButtonStyle())
                 }
-                .padding(.horizontal, 24)
-                
-                Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.theme.background)
@@ -894,7 +854,56 @@ struct SampleBodyGalleryView: View {
                     .foregroundColor(.theme.primary)
                 }
             }
+            .onAppear(perform: loadBodies)
         }
+    }
+
+    private func loadBodies() {
+        var urls: [URL] = []
+        let exts = ["png", "jpg", "jpeg", "webp"]
+        let fm = FileManager.default
+        let resourceRoot = Bundle.main.resourceURL
+
+        func collectFromFolder(_ folder: String) {
+            guard let base = resourceRoot?.appendingPathComponent(folder), fm.fileExists(atPath: base.path) else { return }
+            if let e = fm.enumerator(at: base, includingPropertiesForKeys: nil) {
+                for case let fileURL as URL in e {
+                    if exts.contains(fileURL.pathExtension.lowercased()) {
+                        urls.append(fileURL)
+                    }
+                }
+            }
+        }
+
+        switch interest {
+        case .male:
+            collectFromFolder("men-bodies")
+        case .female:
+            collectFromFolder("women-bodies")
+        case .everything, .notSpecified:
+            collectFromFolder("men-bodies")
+            collectFromFolder("women-bodies")
+        }
+
+        // Fallback: scan bundle for body files using explicit prefixes to avoid collisions
+        if urls.isEmpty, let root = resourceRoot, let e = fm.enumerator(at: root, includingPropertiesForKeys: nil) {
+            for case let fileURL as URL in e {
+                if !exts.contains(fileURL.pathExtension.lowercased()) { continue }
+                let pathLower = fileURL.path.lowercased()
+                if pathLower.contains("clothingimages/") { continue }
+                let name = fileURL.lastPathComponent.lowercased()
+                switch interest {
+                case .male:
+                    if name.hasPrefix("body_men_") { urls.append(fileURL) }
+                case .female:
+                    if name.hasPrefix("body_women_") { urls.append(fileURL) }
+                case .everything, .notSpecified:
+                    if name.hasPrefix("body_men_") || name.hasPrefix("body_women_") { urls.append(fileURL) }
+                }
+            }
+        }
+
+        bodyURLs = urls.sorted { $0.lastPathComponent.localizedCaseInsensitiveCompare($1.lastPathComponent) == .orderedAscending }
     }
 }
 
