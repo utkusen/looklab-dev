@@ -394,7 +394,7 @@ struct FacePhotoUploadView: View {
             ImagePicker(selectedImage: $selectedImage, sourceType: .camera)
         }
         .sheet(isPresented: $showingSampleGallery) {
-            SampleFaceGalleryView(selectedImage: $selectedImage)
+            SampleFaceGalleryView(selectedImage: $selectedImage, interest: user.fashionInterest)
         }
     }
 }
@@ -655,11 +655,14 @@ struct ProfileView: View {
 
 struct SampleFaceGalleryView: View {
     @Binding var selectedImage: UIImage?
+    let interest: FashionInterest
     @Environment(\.presentationMode) var presentationMode
+    
+    @State private var faceURLs: [URL] = []
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 24) {
+            VStack(spacing: 16) {
                 Text("Select a Sample Face")
                     .font(.theme.title2)
                     .foregroundColor(.theme.textPrimary)
@@ -669,82 +672,56 @@ struct SampleFaceGalleryView: View {
                     .font(.theme.body)
                     .foregroundColor(.theme.textSecondary)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
                 
-                Spacer()
-                
-                // Sample faces grid
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 2), spacing: 16) {
-                    // Sample face 1 - using system person icon for now
-                    Button(action: {
-                        // Create a sample face image from system icon
-                        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 200, height: 200))
-                        let sampleImage = renderer.image { context in
-                            UIColor.systemGray3.setFill()
-                            context.fill(CGRect(x: 0, y: 0, width: 200, height: 200))
-                            
-                            let config = UIImage.SymbolConfiguration(pointSize: 80, weight: .regular)
-                            let personIcon = UIImage(systemName: "person.crop.circle.fill", withConfiguration: config)
-                            personIcon?.draw(in: CGRect(x: 60, y: 60, width: 80, height: 80))
-                        }
-                        
-                        selectedImage = sampleImage
-                        presentationMode.wrappedValue.dismiss()
-                    }) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.theme.surface)
-                                .frame(height: 120)
-                            
-                            VStack(spacing: 8) {
-                                Image(systemName: "person.crop.circle.fill")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.theme.textSecondary)
-                                
-                                Text("Sample Face 1")
-                                    .font(.theme.caption1)
-                                    .foregroundColor(.theme.textSecondary)
+                if faceURLs.isEmpty {
+                    VStack(spacing: 8) {
+                        Text("No sample faces found")
+                            .font(.theme.headline)
+                            .foregroundColor(.theme.textSecondary)
+                        Text("Ensure 'men-faces' and 'women-faces' are added as folder references (blue) and included in the app target.")
+                            .font(.theme.caption1)
+                            .foregroundColor(.theme.textSecondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
+                    }
+                    .padding(.top, 32)
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 2), spacing: 16) {
+                            ForEach(faceURLs, id: \.self) { url in
+                                Button(action: {
+                                    if let img = UIImage(contentsOfFile: url.path) {
+                                        selectedImage = img
+                                        presentationMode.wrappedValue.dismiss()
+                                    }
+                                }) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.theme.surface)
+                                            .frame(height: 140)
+                                        
+                                        if let uiImage = UIImage(contentsOfFile: url.path) {
+                                            Image(uiImage: uiImage)
+                                                .resizable()
+                                                .scaledToFit()
+                                                .frame(maxWidth: .infinity, maxHeight: 120)
+                                                .padding(12)
+                                        } else {
+                                            // Fallback if image fails to load
+                                            Image(systemName: "person.crop.circle")
+                                                .font(.system(size: 40))
+                                                .foregroundColor(.theme.textSecondary)
+                                        }
+                                    }
+                                }
+                                .buttonStyle(PlainButtonStyle())
                             }
                         }
+                        .padding(.horizontal, 24)
+                        .padding(.top, 8)
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    // Sample face 2 - different icon
-                    Button(action: {
-                        // Create a different sample face image
-                        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 200, height: 200))
-                        let sampleImage = renderer.image { context in
-                            UIColor.systemBlue.withAlphaComponent(0.2).setFill()
-                            context.fill(CGRect(x: 0, y: 0, width: 200, height: 200))
-                            
-                            let config = UIImage.SymbolConfiguration(pointSize: 80, weight: .regular)
-                            let personIcon = UIImage(systemName: "person.crop.circle", withConfiguration: config)
-                            personIcon?.draw(in: CGRect(x: 60, y: 60, width: 80, height: 80))
-                        }
-                        
-                        selectedImage = sampleImage
-                        presentationMode.wrappedValue.dismiss()
-                    }) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.theme.surface)
-                                .frame(height: 120)
-                            
-                            VStack(spacing: 8) {
-                                Image(systemName: "person.crop.circle")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.theme.primary)
-                                
-                                Text("Sample Face 2")
-                                    .font(.theme.caption1)
-                                    .foregroundColor(.theme.textSecondary)
-                            }
-                        }
-                    }
-                    .buttonStyle(PlainButtonStyle())
                 }
-                .padding(.horizontal, 24)
-                
-                Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.theme.background)
@@ -757,7 +734,66 @@ struct SampleFaceGalleryView: View {
                     .foregroundColor(.theme.primary)
                 }
             }
+            .onAppear(perform: loadFaces)
         }
+    }
+    
+    private func loadFaces() {
+        var urls: [URL] = []
+        let exts = ["png", "jpg", "jpeg", "webp"]
+        let fm = FileManager.default
+        let resourceRoot = Bundle.main.resourceURL
+
+        func collectFromFolder(_ folder: String) {
+            guard let base = resourceRoot?.appendingPathComponent(folder), fm.fileExists(atPath: base.path) else { return }
+            if let e = fm.enumerator(at: base, includingPropertiesForKeys: nil) {
+                for case let fileURL as URL in e {
+                    if exts.contains(fileURL.pathExtension.lowercased()) {
+                        urls.append(fileURL)
+                    }
+                }
+            }
+        }
+
+        switch interest {
+        case .male:
+            collectFromFolder("men-faces")
+        case .female:
+            collectFromFolder("women-faces")
+        case .everything, .notSpecified:
+            collectFromFolder("men-faces")
+            collectFromFolder("women-faces")
+        }
+
+        // Fallback: scan bundle for likely face files while excluding clothing
+        if urls.isEmpty, let root = resourceRoot, let e = fm.enumerator(at: root, includingPropertiesForKeys: nil) {
+            let excludePrefixesMen = ["men_top_", "men_bottom_", "men_shoe_", "men_outwear", "men_accessories", "men_head_", "men_fullbody_"]
+            let excludePrefixesWomen = ["women_top_", "women_bottom_", "women_shoe_", "women_outwear", "women_accessories", "women_head_", "women_fullbody_"]
+            for case let fileURL as URL in e {
+                if !exts.contains(fileURL.pathExtension.lowercased()) { continue }
+                let name = fileURL.lastPathComponent.lowercased()
+                let pathLower = fileURL.path.lowercased()
+                if pathLower.contains("clothingimages/") { continue }
+                switch interest {
+                case .male:
+                    if name.hasPrefix("men_") && !excludePrefixesMen.contains(where: { name.hasPrefix($0) }) {
+                        urls.append(fileURL)
+                    }
+                case .female:
+                    if name.hasPrefix("women_") && !excludePrefixesWomen.contains(where: { name.hasPrefix($0) }) {
+                        urls.append(fileURL)
+                    }
+                case .everything, .notSpecified:
+                    if (name.hasPrefix("men_") && !excludePrefixesMen.contains(where: { name.hasPrefix($0) })) ||
+                       (name.hasPrefix("women_") && !excludePrefixesWomen.contains(where: { name.hasPrefix($0) })) {
+                        urls.append(fileURL)
+                    }
+                }
+            }
+        }
+
+        // Sort by filename for stable order
+        faceURLs = urls.sorted { $0.lastPathComponent.localizedCaseInsensitiveCompare($1.lastPathComponent) == .orderedAscending }
     }
 }
 
