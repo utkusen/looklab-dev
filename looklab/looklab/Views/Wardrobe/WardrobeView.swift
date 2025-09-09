@@ -5,9 +5,13 @@ struct WardrobeView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var clothingItems: [ClothingItem]
     @State private var showingAddItemSheet = false
+    @StateObject private var firebaseManager = FirebaseManager.shared
+    @Query private var users: [User]
     
-    // Sample user for demonstration - in real app this would come from user session
-    private let sampleUser = User(id: "sample", fashionInterest: .male)
+    // Resolve active user from Firebase or local store
+    private var activeUser: User {
+        firebaseManager.currentUser ?? users.first ?? User(id: "local", fashionInterest: .everything)
+    }
     
     var body: some View {
         NavigationView {
@@ -38,13 +42,13 @@ struct WardrobeView: View {
                 }
             }
             .sheet(isPresented: $showingAddItemSheet) {
-                AddItemSheet(user: sampleUser)
+                AddItemSheet(user: activeUser)
             }
         }
     }
     
     private func itemsFor(category: ClothingCategory) -> [ClothingItem] {
-        return clothingItems.filter { $0.category == category }
+        return clothingItems.filter { $0.category == category && $0.userID == activeUser.id }
     }
 }
 

@@ -152,50 +152,59 @@ struct ClothingGallery {
     }
     
     private static func getSampleItemsForCategory(interest: FashionInterest, category: ClothingCategory) -> [SampleItem] {
-        let genderPath = interest == .male ? "men" : "women"
         let categoryPath = mapCategoryToImagePath(category)
-        
+        let genderPaths: [String]
+        switch interest {
+        case .male:
+            genderPaths = ["men"]
+        case .female:
+            genderPaths = ["women"]
+        case .everything, .notSpecified:
+            genderPaths = ["men", "women"]
+        }
+
         guard let resourcePath = Bundle.main.resourcePath else {
             print("Could not get bundle resource path")
             return []
         }
-        
-        let fullPath = "\(resourcePath)/ClothingImages/\(genderPath)/\(categoryPath)"
-        
-        do {
-            let fileManager = FileManager.default
-            let files = try fileManager.contentsOfDirectory(atPath: fullPath)
-            
-            let webpFiles = files.filter { $0.hasSuffix(".webp") && !$0.hasPrefix(".") }
-            
-            return webpFiles.map { filename in
-                let imagePath = "ClothingImages/\(genderPath)/\(categoryPath)/\(filename)"
-                return SampleItem(
-                    imageName: imagePath,
-                    displayName: formatItemName(filename)
-                )
-            }
-        } catch {
-            // Fallback: If the folder structure isn't preserved in the app bundle,
-            // scan all bundled .webp files and filter by filename prefix.
-            print("Error reading directory \(fullPath): \(error). Falling back to filename-based search.")
-            let allWebPURLs = Bundle.main.urls(forResourcesWithExtension: "webp", subdirectory: nil) ?? []
-            let expectedPrefix = "\(genderPath)_\(categoryPath)_"
-            let matching = allWebPURLs.filter { $0.lastPathComponent.hasPrefix(expectedPrefix) }
-            
-            // Map found URLs to relative paths within the bundle so they can be loaded via resourcePath.
-            let resourcePrefix = resourcePath.hasSuffix("/") ? resourcePath : resourcePath + "/"
-            return matching.map { url in
-                let absolutePath = url.path
-                let relativePath = absolutePath.hasPrefix(resourcePrefix)
-                    ? String(absolutePath.dropFirst(resourcePrefix.count))
-                    : url.lastPathComponent
-                return SampleItem(
-                    imageName: relativePath,
-                    displayName: formatItemName(url.lastPathComponent)
-                )
+
+        var results: [SampleItem] = []
+        let fileManager = FileManager.default
+
+        for genderPath in genderPaths {
+            let fullPath = "\(resourcePath)/ClothingImages/\(genderPath)/\(categoryPath)"
+            do {
+                let files = try fileManager.contentsOfDirectory(atPath: fullPath)
+                let webpFiles = files.filter { $0.hasSuffix(".webp") && !$0.hasPrefix(".") }
+                let items = webpFiles.map { filename in
+                    let imagePath = "ClothingImages/\(genderPath)/\(categoryPath)/\(filename)"
+                    return SampleItem(
+                        imageName: imagePath,
+                        displayName: formatItemName(filename)
+                    )
+                }
+                results.append(contentsOf: items)
+            } catch {
+                // Fallback: flattened bundle – filter by filename prefix
+                let allWebPURLs = Bundle.main.urls(forResourcesWithExtension: "webp", subdirectory: nil) ?? []
+                let expectedPrefix = "\(genderPath)_\(categoryPath)_"
+                let matching = allWebPURLs.filter { $0.lastPathComponent.hasPrefix(expectedPrefix) }
+                let resourcePrefix = resourcePath.hasSuffix("/") ? resourcePath : resourcePath + "/"
+                let items = matching.map { url in
+                    let absolutePath = url.path
+                    let relativePath = absolutePath.hasPrefix(resourcePrefix)
+                        ? String(absolutePath.dropFirst(resourcePrefix.count))
+                        : url.lastPathComponent
+                    return SampleItem(
+                        imageName: relativePath,
+                        displayName: formatItemName(url.lastPathComponent)
+                    )
+                }
+                results.append(contentsOf: items)
             }
         }
+
+        return results
     }
     
     private struct SampleItem {
