@@ -95,11 +95,30 @@ struct LargeClothingImageView: View {
                 placeholder: item.category.iconName
             )
             .overlay(
+                // Selection border highlight
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.theme.primary.opacity(isSelected ? 0.95 : 0), lineWidth: 2)
+            )
+            .overlay(
                 // Selection overlay
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.theme.accent.opacity(isSelected ? 0.1 : 0))
+                    .fill(Color.theme.primary.opacity(isSelected ? 0.10 : 0))
                     .animation(.easeInOut(duration: 0.2), value: isSelected)
             )
+            .overlay(alignment: .topTrailing) {
+                if isSelected {
+                    ZStack {
+                        Circle()
+                            .fill(Color.theme.primary)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 22, height: 22)
+                    .padding(8)
+                    .transition(.scale.combined(with: .opacity))
+                }
+            }
             
             Text(item.name)
                 .font(.theme.callout)

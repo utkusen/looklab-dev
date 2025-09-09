@@ -5,8 +5,9 @@ struct GallerySelectionView: View {
     let user: User
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Query private var wardrobeItems: [ClothingItem]
     @State private var selectedCategory: ClothingCategory = .tops
-    @State private var selectedItem: ClothingGalleryItem?
+    @State private var selectedItems: Set<ClothingGalleryItem> = []
     
     var body: some View {
         NavigationView {
@@ -51,11 +52,11 @@ struct GallerySelectionView: View {
             ], spacing: 16) {
                 ForEach(galleryItems, id: \.id) { item in
                     Button(action: {
-                        selectedItem = item
+                        toggleSelection(item)
                     }) {
                         LargeClothingImageView(
                             item: item,
-                            isSelected: selectedItem?.id == item.id
+                            isSelected: selectedItems.contains(item)
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -69,26 +70,27 @@ struct GallerySelectionView: View {
     
     @ViewBuilder
     private var addButton: some View {
-        if let selectedItem = selectedItem {
+        if !selectedItems.isEmpty {
             VStack(spacing: 0) {
                 Divider()
                     .background(Color.theme.border)
                 
                 Button(action: {
-                    addItemToWardrobe(selectedItem)
+                    addSelectedItemsToWardrobe()
                 }) {
                     HStack {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 20))
-                        
-                        Text("Add to Wardrobe")
+                        Text("Add \(selectedItems.count) Item\(selectedItems.count > 1 ? "s" : "")")
                             .font(.theme.headline)
+                            .fontWeight(.semibold)
                     }
-                    .foregroundColor(.white)
+                    .foregroundColor(Color.theme.background)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
                     .background(Color.theme.accent)
                     .cornerRadius(16)
+                    .shadow(color: Color.black.opacity(0.18), radius: 8, x: 0, y: 4)
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 16)
@@ -98,21 +100,36 @@ struct GallerySelectionView: View {
     }
     
     private var galleryItems: [ClothingGalleryItem] {
-        ClothingGallery.getGalleryItems(for: user.fashionInterest, category: selectedCategory)
+        // Items already in the user's wardrobe should not be shown
+        let all = ClothingGallery.getGalleryItems(for: user.fashionInterest, category: selectedCategory)
+        let existingPaths = Set(wardrobeItems
+            .filter { $0.userID == user.id && $0.category == selectedCategory }
+            .compactMap { $0.imageURL }
+        )
+        return all.filter { !existingPaths.contains($0.imagePath) }
     }
     
-    private func addItemToWardrobe(_ galleryItem: ClothingGalleryItem) {
-        let clothingItem = ClothingItem(
-            userID: user.id,
-            name: galleryItem.name,
-            category: galleryItem.category,
-            imageURL: galleryItem.imagePath,
-            isFromGallery: true
-        )
-        
-        modelContext.insert(clothingItem)
+    private func toggleSelection(_ item: ClothingGalleryItem) {
+        if selectedItems.contains(item) {
+            selectedItems.remove(item)
+        } else {
+            selectedItems.insert(item)
+        }
+    }
+
+    private func addSelectedItemsToWardrobe() {
+        guard !selectedItems.isEmpty else { return }
+        for galleryItem in selectedItems {
+            let clothingItem = ClothingItem(
+                userID: user.id,
+                name: galleryItem.name,
+                category: galleryItem.category,
+                imageURL: galleryItem.imagePath,
+                isFromGallery: true
+            )
+            modelContext.insert(clothingItem)
+        }
         try? modelContext.save()
-        
         dismiss()
     }
 }

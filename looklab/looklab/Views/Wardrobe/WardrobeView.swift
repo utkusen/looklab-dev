@@ -51,6 +51,9 @@ struct WardrobeView: View {
 struct CategorySection: View {
     let category: ClothingCategory
     let items: [ClothingItem]
+    @Environment(\.modelContext) private var modelContext
+    @State private var showDeleteConfirm = false
+    @State private var itemPendingDelete: ClothingItem?
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -88,11 +91,28 @@ struct CategorySection: View {
                 ], spacing: 12) {
                     ForEach(items, id: \.id) { item in
                         EnhancedClothingItemCard(item: item)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    itemPendingDelete = item
+                                    showDeleteConfirm = true
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
                     }
                 }
             }
         }
         .padding(.vertical, 8)
+        .alert("Delete item?", isPresented: $showDeleteConfirm, presenting: itemPendingDelete) { item in
+            Button("Delete", role: .destructive) {
+                modelContext.delete(item)
+                try? modelContext.save()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { item in
+            Text("This will remove \(item.name) from your wardrobe.")
+        }
     }
 }
 

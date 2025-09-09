@@ -30,7 +30,7 @@ struct ClothingGallery {
         
         return sampleItems.map { item in
             ClothingGalleryItem(
-                id: UUID().uuidString,
+                id: item.imageName, // stable, deterministic id for selection state
                 imagePath: item.imageName,
                 name: item.displayName,
                 category: category
