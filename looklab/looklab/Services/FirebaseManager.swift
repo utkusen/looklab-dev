@@ -70,6 +70,14 @@ final class FirebaseManager: ObservableObject {
         if let skinToneString = data["skinTone"] as? String {
             user.skinTone = SkinTone(rawValue: skinToneString)
         }
+        if let unitSystemString = data["unitSystem"] as? String, let unit = UnitSystem(rawValue: unitSystemString) {
+            user.unitSystem = unit
+        }
+        if let age = data["age"] as? Int { user.age = age }
+        if let hairColorString = data["hairColor"] as? String { user.hairColor = HairColor(rawValue: hairColorString) }
+        if let hairTypeString = data["hairType"] as? String { user.hairType = HairType(rawValue: hairTypeString) }
+        if let beardTypeString = data["beardType"] as? String { user.beardType = BeardType(rawValue: beardTypeString) }
+        if let profileText = data["appearanceProfileText"] as? String { user.appearanceProfileText = profileText }
         
         return user
     }
@@ -101,6 +109,12 @@ final class FirebaseManager: ObservableObject {
             "height": user.height ?? 0,
             "weight": user.weight ?? 0,
             "skinTone": user.skinTone?.rawValue ?? "",
+            "age": user.age ?? 0,
+            "unitSystem": user.unitSystem.rawValue,
+            "hairColor": user.hairColor?.rawValue ?? "",
+            "hairType": user.hairType?.rawValue ?? "",
+            "beardType": user.beardType?.rawValue ?? BeardType.none.rawValue,
+            "appearanceProfileText": user.appearanceProfileText ?? "",
             "updatedAt": FieldValue.serverTimestamp()
         ]
         
