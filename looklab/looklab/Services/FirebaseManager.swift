@@ -148,7 +148,13 @@ final class FirebaseManager: ObservableObject {
     }
 
     // MARK: - Build Look with Gemini (returns single generated image)
+    // Legacy signature kept for compatibility
     func buildLook(selectedItems: [ClothingItem], background: BackgroundType, user: User?) async throws -> UIImage {
+        return try await buildLook(selectedItems: selectedItems, envInfo: envDescription(for: background), user: user)
+    }
+
+    // New signature: pass envInfo explicitly from UI
+    func buildLook(selectedItems: [ClothingItem], envInfo: String, user: User?) async throws -> UIImage {
         // Map items to categories expected by backend
         var tops: [[String: Any]] = []
         var bottoms: [[String: Any]] = []
@@ -178,7 +184,6 @@ final class FirebaseManager: ObservableObject {
         // Face/body descriptions from profile (text only)
         let faceDesc = faceDescription(from: user)
         let bodyDesc = bodyDescription(from: user)
-        let envInfo = envDescription(for: background)
 
         let data: [String: Any] = [
             "FACE_DESC": faceDesc,
@@ -191,6 +196,10 @@ final class FirebaseManager: ObservableObject {
             "ACCESSORIES": accessories,
             "FULL_OUTFIT": fullOutfit
         ]
+
+        // Debug (no base64): confirm values being sent
+        print("buildLook ENV_INFO=\(envInfo)")
+        print("buildLook counts TOPS=\(tops.count) BOTTOMS=\(bottoms.count) SHOES=\(shoes.count) ACCESSORIES=\(accessories.count) FULL_OUTFIT=\(fullOutfit.count)")
 
         let result = try await functions.httpsCallable("buildLook").call(data)
         guard let dict = result.data as? [String: Any],
@@ -269,9 +278,9 @@ final class FirebaseManager: ObservableObject {
     private func envDescription(for bg: BackgroundType) -> String {
         switch bg {
         case .elevatorMirror: return "elevator mirror selfie"
-        case .street: return "busy city street outdoors; not a mirror selfie; not indoors; no elevator"
-        case .restaurant: return "restaurant interior; no mirror; not an elevator"
-        case .cafe: return "cozy cafe setting; not a mirror; not an elevator"
+        case .street: return "busy city street outdoors"
+        case .restaurant: return "restaurant interior"
+        case .cafe: return "cozy cafe setting"
         case .plainBackground: return "plain studio background"
         case .beach: return "sandy beach in daylight"
         case .originalBackground: return "original photo background"

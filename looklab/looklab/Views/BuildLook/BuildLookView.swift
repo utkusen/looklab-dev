@@ -12,7 +12,14 @@ struct BuildLookView: View {
     @State private var selectedAccessories: Set<String> = []
     @State private var selectedSingles: [ClothingCategory: String] = [:]
     @State private var background: BackgroundType = .elevatorMirror
-    @State private var showBuilder = false
+    @State private var builderInput: LookBuilderInput?
+
+    private struct LookBuilderInput: Identifiable {
+        let id = UUID()
+        let items: [ClothingItem]
+        let background: BackgroundType
+        let envInfo: String
+    }
 
     // Sample categories for this stub; real UI will allow picking from wardrobe/gallery
     private let singleSelectCategories: [ClothingCategory] = [.bottoms, .fullbody, .outerwear, .shoes, .head]
@@ -52,7 +59,9 @@ struct BuildLookView: View {
                 }
 
                 Button("Build") {
-                    showBuilder = true
+                    print("User selected background: raw=\(background.rawValue) name=\(background.displayName)")
+                    let items = selectedItemsFromState.isEmpty ? mockSelectedItems() : selectedItemsFromState
+                    builderInput = LookBuilderInput(items: items, background: background, envInfo: background.envInfoText)
                 }
                 .buttonStyle(PrimaryButtonStyle(disabled: false))
                 .padding(.horizontal, 24)
@@ -64,13 +73,13 @@ struct BuildLookView: View {
             .background(Color.theme.background.ignoresSafeArea())
             .navigationBarHidden(true)
         }
-        .sheet(isPresented: $showBuilder) {
-            // Pass lightweight selection to builder; for design we synthesize mock ClothingItems
+        .sheet(item: $builderInput) { input in
             LookBuilderView(
-                selectedItems: selectedItemsFromState.isEmpty ? mockSelectedItems() : selectedItemsFromState,
-                background: background,
-                onCancel: { showBuilder = false },
-                onSaved: { showBuilder = false }
+                selectedItems: input.items,
+                background: input.background,
+                envInfo: input.envInfo,
+                onCancel: { builderInput = nil },
+                onSaved: { builderInput = nil }
             )
             .preferredColorScheme(.dark)
         }

@@ -12,6 +12,7 @@ enum LookBuildPhase: String, CaseIterable {
 struct LookBuilderView: View {
     let selectedItems: [ClothingItem]
     let background: BackgroundType
+    var envInfo: String? = nil
     var onCancel: () -> Void
     var onSaved: () -> Void
 
@@ -228,7 +229,10 @@ struct LookBuilderView: View {
         Task {
             do {
                 let user = users.sorted(by: { $0.updatedAt > $1.updatedAt }).first
-                let image = try await FirebaseManager.shared.buildLook(selectedItems: selectedItems, background: background, user: user)
+                print("LookBuilder background raw=\(background.rawValue) name=\(background.displayName)")
+                let effectiveEnv = envInfo ?? background.envInfoText
+                print("LookBuilder startBuild envInfo=\(effectiveEnv)")
+                let image = try await FirebaseManager.shared.buildLook(selectedItems: selectedItems, envInfo: effectiveEnv, user: user)
                 await MainActor.run {
                     generatedImage = image
                     phase = .complete

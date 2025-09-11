@@ -121,14 +121,22 @@ export const buildLook = onCall({ secrets: [GEMINI_API_KEY] }, async (request) =
   pushArrayParts(parts, "ACCESSORIES", data.ACCESSORIES);
   pushArrayParts(parts, "FULL_OUTFIT", data.FULL_OUTFIT);
 
-  if (data.ENV_INFO) {
-    const env = String(data.ENV_INFO).toLowerCase();
-    parts.push({ text: `ENV_INFO: ${data.ENV_INFO}` });
-    if (env.includes("street") || env.includes("city")) {
-      parts.push({ text: "NOTES: outdoor city street; avoid mirrors and elevators; not a mirror selfie" });
-    }
-  }
+  if (data.ENV_INFO) parts.push({ text: `ENV_INFO: ${data.ENV_INFO}` });
   if (data.NOTES) parts.push({ text: `NOTES: ${data.NOTES}` });
+
+  // Log a concise summary for debugging (no base64 data)
+  logger.info("buildLook input", {
+    FACE_DESC: !!data.FACE_DESC,
+    BODY_DESC: !!data.BODY_DESC,
+    ENV_INFO: data.ENV_INFO ?? null,
+    counts: {
+      TOPS: data.TOPS?.length ?? 0,
+      BOTTOMS: data.BOTTOMS?.length ?? 0,
+      SHOES: data.SHOES?.length ?? 0,
+      ACCESSORIES: data.ACCESSORIES?.length ?? 0,
+      FULL_OUTFIT: data.FULL_OUTFIT?.length ?? 0,
+    },
+  });
 
   const payload = {
     systemInstruction: {
