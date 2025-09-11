@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import FirebaseCore
 import FirebaseAuth
 import FirebaseFirestore
@@ -144,5 +145,124 @@ final class FirebaseManager: ObservableObject {
         }
         
         throw NSError(domain: "FirebaseManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response from outfit generation"])
+    }
+
+    // MARK: - Build Look with Gemini (returns single generated image)
+    func buildLook(selectedItems: [ClothingItem], background: BackgroundType, user: User?) async throws -> UIImage {
+        // Map items to categories expected by backend
+        var tops: [[String: Any]] = []
+        var bottoms: [[String: Any]] = []
+        var shoes: [[String: Any]] = []
+        var accessories: [[String: Any]] = []
+        var fullOutfit: [[String: Any]] = []
+
+        for item in selectedItems {
+            guard let path = item.imageURL, !path.isEmpty else { continue }
+            if let (b64, mime) = try await encodeImageBase64(from: path) {
+                let payload: [String: Any] = ["data": b64, "mimeType": mime]
+                switch item.category {
+                case .tops, .outerwear:
+                    tops.append(payload)
+                case .bottoms:
+                    bottoms.append(payload)
+                case .shoes:
+                    shoes.append(payload)
+                case .accessories, .head:
+                    accessories.append(payload)
+                case .fullbody:
+                    fullOutfit.append(payload)
+                }
+            }
+        }
+
+        // Face/body descriptions from profile (text only)
+        let faceDesc = faceDescription(from: user)
+        let bodyDesc = bodyDescription(from: user)
+        let envInfo = background.displayName
+
+        let data: [String: Any] = [
+            "FACE_DESC": faceDesc,
+            "BODY_DESC": bodyDesc,
+            "ENV_INFO": envInfo,
+            "NOTES": user?.appearanceProfileText ?? "",
+            "TOPS": tops,
+            "BOTTOMS": bottoms,
+            "SHOES": shoes,
+            "ACCESSORIES": accessories,
+            "FULL_OUTFIT": fullOutfit
+        ]
+
+        let result = try await functions.httpsCallable("buildLook").call(data)
+        guard let dict = result.data as? [String: Any],
+              let image = dict["image"] as? [String: Any],
+              let b64 = image["data"] as? String,
+              let mime = image["mimeType"] as? String,
+              let imgData = Data(base64Encoded: b64) else {
+            throw NSError(domain: "FirebaseManager", code: -2, userInfo: [NSLocalizedDescriptionKey: "Invalid buildLook response"])
+        }
+
+        // Some responses might be jpeg even if mime says png; UIImage handles it.
+        guard let uiImage = UIImage(data: imgData) else {
+            throw NSError(domain: "FirebaseManager", code: -3, userInfo: [NSLocalizedDescriptionKey: "Failed to decode image (\(mime))"])
+        }
+        return uiImage
+    }
+
+    // MARK: - Helpers
+    private func faceDescription(from user: User?) -> String {
+        guard let user = user else { return "" }
+        var parts: [String] = []
+        if let hair = user.hairColor?.rawValue { parts.append(hair) }
+        if let type = user.hairType?.rawValue { parts.append(type.replacingOccurrences(of: "_", with: " ")) }
+        if let beard = user.beardType?.rawValue, beard != BeardType.none.rawValue { parts.append(beard.replacingOccurrences(of: "_", with: " ")) }
+        return parts.isEmpty ? (user.appearanceProfileText ?? "") : parts.joined(separator: " ")
+    }
+
+    private func bodyDescription(from user: User?) -> String {
+        guard let user = user else { return "" }
+        var parts: [String] = []
+        if let h = user.height { parts.append(String(format: "%.2f height", h)) }
+        if let w = user.weight { parts.append(String(format: "%.0fkg", w)) }
+        if let tone = user.skinTone?.rawValue { parts.append(tone.replacingOccurrences(of: "_", with: " ")) }
+        return parts.joined(separator: ", ")
+    }
+
+    private func encodeImageBase64(from path: String) async throws -> (String, String)? {
+        if path.lowercased().hasPrefix("http") {
+            // Remote URL (e.g., Firebase Storage download URL)
+            guard let url = URL(string: path) else { return nil }
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let mime = mimeType(forPath: url.path)
+            return (data.base64EncodedString(), mime)
+        } else {
+            // Bundle path
+            guard let data = loadDataFromBundle(path: path) else { return nil }
+            let mime = mimeType(forPath: path)
+            return (data.base64EncodedString(), mime)
+        }
+    }
+
+    private func mimeType(forPath path: String) -> String {
+        let ext = (path as NSString).pathExtension.lowercased()
+        switch ext {
+        case "webp": return "image/webp"
+        case "jpg", "jpeg": return "image/jpeg"
+        case "png": return "image/png"
+        default: return "image/png"
+        }
+    }
+
+    private func loadDataFromBundle(path: String) -> Data? {
+        guard let resourcePath = Bundle.main.resourcePath else { return nil }
+        let fullPath = "\(resourcePath)/\(path)"
+        if let data = NSData(contentsOfFile: fullPath) as Data? { return data }
+        // Fallback by filename search
+        let filename = (path as NSString).lastPathComponent
+        if let urls = Bundle.main.urls(forResourcesWithExtension: nil, subdirectory: nil) {
+            if let url = urls.first(where: { $0.lastPathComponent == filename }) {
+                return try? Data(contentsOf: url)
+            }
+        }
+        return nil
     }
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 enum LookBuildPhase: String, CaseIterable {
     case uploading = "Uploading items"
@@ -14,10 +15,13 @@ struct LookBuilderView: View {
     var onCancel: () -> Void
     var onSaved: () -> Void
 
+    @Environment(\.modelContext) private var modelContext
+    @Query private var users: [User]
     @State private var phase: LookBuildPhase = .uploading
     @State private var progress: Double = 0.12
     @State private var isDone = false
     @State private var showDetails = true
+    @State private var generatedImage: UIImage?
 
     var body: some View {
         ZStack {
@@ -33,7 +37,7 @@ struct LookBuilderView: View {
             .padding(.horizontal, 16)
             .padding(.top, 12)
         }
-        .onAppear(perform: simulateProgress)
+        .onAppear(perform: startBuild)
     }
 
     private var header: some View {
@@ -138,19 +142,28 @@ struct LookBuilderView: View {
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color.theme.surface)
                     .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.theme.border, lineWidth: 1))
-                VStack(spacing: 10) {
-                    Image(systemName: "photo.on.rectangle")
-                        .font(.system(size: 40, weight: .regular))
-                        .foregroundColor(.theme.accent)
-                    Text("Generated Look Preview")
-                        .font(.theme.subheadline)
-                        .foregroundColor(.theme.textSecondary)
+                if let img = generatedImage {
+                    Image(uiImage: img)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity, maxHeight: 340)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .padding(6)
+                } else {
+                    VStack(spacing: 10) {
+                        Image(systemName: "photo.on.rectangle")
+                            .font(.system(size: 40, weight: .regular))
+                            .foregroundColor(.theme.accent)
+                        Text("Generated Look Preview")
+                            .font(.theme.subheadline)
+                            .foregroundColor(.theme.textSecondary)
+                    }
                 }
             }
             .frame(height: 340)
 
             HStack(spacing: 12) {
-                Button(action: onSaved) {
+                Button(action: saveLook) {
                     Label("Save to My Looks", systemImage: "square.and.arrow.down")
                         .frame(maxWidth: .infinity)
                 }
@@ -194,30 +207,79 @@ struct LookBuilderView: View {
         }
     }
 
-    private func simulateProgress() {
-        // Design-only staged progress to showcase UI
-        let steps: [(LookBuildPhase, Double, Double)] = [
-            (.uploading, 0.12, 0.22),
-            (.composing, 0.22, 0.48),
-            (.generating, 0.48, 0.78),
-            (.enhancing, 0.78, 0.98)
+    private func startBuild() {
+        // Progress animation while building
+        animateProgress()
+        Task {
+            do {
+                let user = users.sorted(by: { $0.updatedAt > $1.updatedAt }).first
+                let image = try await FirebaseManager.shared.buildLook(selectedItems: selectedItems, background: background, user: user)
+                await MainActor.run {
+                    generatedImage = image
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.9)) {
+                        phase = .complete
+                        progress = 1.0
+                        isDone = true
+                    }
+                }
+            } catch {
+                // In a real app, surface error UI. For now, mark complete without image.
+                await MainActor.run {
+                    withAnimation {
+                        phase = .complete
+                        progress = 1.0
+                        isDone = true
+                    }
+                }
+            }
+        }
+    }
+
+    private func animateProgress() {
+        let steps: [(LookBuildPhase, Double)] = [
+            (.uploading, 0.25),
+            (.composing, 0.5),
+            (.generating, 0.8),
+            (.enhancing, 0.95)
         ]
         var delay: Double = 0
-        for (p, start, end) in steps {
+        for (p, end) in steps {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                 withAnimation(.easeInOut(duration: 0.8)) {
                     phase = p
                     progress = end
                 }
             }
-            delay += 1.0 + Double.random(in: 0.3...0.6)
+            delay += 1.0
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay + 0.8) {
-            withAnimation(.spring(response: 0.45, dampingFraction: 0.9)) {
-                phase = .complete
-                progress = 1.0
-                isDone = true
-            }
+    }
+
+    private func saveLook() {
+        guard let image = generatedImage else { return }
+        // Persist image locally and create a Look entry
+        if let path = saveImageToDocuments(image: image) {
+            let look = Look(userID: selectedItems.first?.userID ?? UUID().uuidString,
+                            name: "My Look",
+                            clothingItemIDs: selectedItems.map { $0.id },
+                            backgroundType: background)
+            look.generatedImageURLs = [path]
+            look.selectedImageURL = path
+            modelContext.insert(look)
+            try? modelContext.save()
+        }
+        onSaved()
+    }
+
+    private func saveImageToDocuments(image: UIImage) -> String? {
+        guard let data = image.pngData() ?? image.jpegData(compressionQuality: 0.92) else { return nil }
+        let filename = "generated_look_\(UUID().uuidString).png"
+        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(filename)
+        guard let url else { return nil }
+        do {
+            try data.write(to: url)
+            return url.path
+        } catch {
+            return nil
         }
     }
 }
