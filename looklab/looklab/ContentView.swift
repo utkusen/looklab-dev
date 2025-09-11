@@ -356,14 +356,6 @@ struct MainTabView: View {
     }
 }
 
-
-struct BuildLookView: View {
-    var body: some View {
-        Text("Build Look")
-            .foregroundColor(.theme.textPrimary)
-    }
-}
-
 struct MyLooksView: View {
     var body: some View {
         Text("My Looks")
