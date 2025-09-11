@@ -72,7 +72,7 @@ enum BackgroundType: String, CaseIterable, Codable {
     var displayName: String {
         switch self {
         case .elevatorMirror: return "Elevator Mirror"
-        case .street: return "Street"
+        case .street: return "City"
         case .restaurant: return "Restaurant"
         case .cafe: return "Cafe"
         case .plainBackground: return "Plain Background"

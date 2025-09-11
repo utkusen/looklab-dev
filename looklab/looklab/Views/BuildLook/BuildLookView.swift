@@ -190,8 +190,8 @@ private struct BackgroundPicker: View {
 
     private func icon(for bg: BackgroundType) -> String {
         switch bg {
-        case .elevatorMirror: return "rectangle.portrait"
-        case .street: return "road.lanes"
+        case .elevatorMirror: return "square.split.bottomrightquarter"
+        case .street: return "building.2"
         case .restaurant: return "fork.knife"
         case .cafe: return "cup.and.saucer"
         case .plainBackground: return "square"
