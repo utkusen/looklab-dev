@@ -6,7 +6,7 @@ final class User {
     var id: String
     var email: String?
     var fullName: String?
-    var fashionInterest: FashionInterest
+    var fashionInterest: FashionInterest?
     // Deprecated image-based fields (kept for backward compatibility)
     var facePhotoURL: String?
     var bodyPhotoURL: String?
@@ -17,7 +17,7 @@ final class User {
     var skinTone: SkinTone?
     // New text-based character setup fields
     var age: Int?
-    var unitSystem: UnitSystem = UnitSystem.imperial
+    var unitSystem: UnitSystem?
     var hairColor: HairColor?
     var hairType: HairType?
     var beardType: BeardType? = BeardType.none
@@ -36,7 +36,7 @@ final class User {
     }
     
     var isOnboardingComplete: Bool {
-        return fashionInterest != .notSpecified && appearanceProfileText?.isEmpty == false
+        return (fashionInterest ?? .notSpecified) != .notSpecified && appearanceProfileText?.isEmpty == false
     }
 }
 

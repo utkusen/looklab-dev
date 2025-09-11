@@ -134,13 +134,13 @@ struct GallerySelectionView: View {
 
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
-            let perCategory = ClothingGallery.getGalleryItems(for: user.fashionInterest, category: selectedCategory)
+            let perCategory = ClothingGallery.getGalleryItems(for: (user.fashionInterest ?? .notSpecified), category: selectedCategory)
             return perCategory.filter { !existingPaths.contains($0.imagePath) }
         } else {
             // Aggregate across all categories for cross-category search
             var all: [ClothingGalleryItem] = []
             for cat in ClothingCategory.allCases {
-                let items = ClothingGallery.getGalleryItems(for: user.fashionInterest, category: cat)
+                let items = ClothingGallery.getGalleryItems(for: (user.fashionInterest ?? .notSpecified), category: cat)
                 all.append(contentsOf: items)
             }
             let unseen = all.filter { !existingPaths.contains($0.imagePath) }

@@ -106,7 +106,7 @@ struct OnboardingFlowView: View {
         if let existingUser = user {
             _user = State(initialValue: existingUser)
             // Determine current step based on what's already completed
-            if existingUser.fashionInterest == .notSpecified {
+            if (existingUser.fashionInterest ?? .notSpecified) == .notSpecified {
                 _currentStep = State(initialValue: .welcome)
             } else if existingUser.appearanceProfileText?.isEmpty ?? true {
                 _currentStep = State(initialValue: .characterSetup)
@@ -233,7 +233,7 @@ struct FashionInterestSelectionView: View {
                             
                             Spacer()
                             
-                            if user.fashionInterest == interest {
+                            if (user.fashionInterest ?? .notSpecified) == interest {
                                 Image(systemName: "checkmark.circle.fill")
                                     .foregroundColor(.theme.primary)
                             }
@@ -244,7 +244,7 @@ struct FashionInterestSelectionView: View {
                         .cornerRadius(16)
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)
-                                .stroke(user.fashionInterest == interest ? Color.theme.primary : Color.clear, lineWidth: 2)
+                                .stroke((user.fashionInterest ?? .notSpecified) == interest ? Color.theme.primary : Color.clear, lineWidth: 2)
                         )
                     }
                 }
@@ -379,9 +379,59 @@ struct CalendarView: View {
 }
 
 struct ProfileView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query private var users: [User]
+    @State private var user: User = User(id: Auth.auth().currentUser?.uid ?? UUID().uuidString)
+    @State private var showSaved = false
+
     var body: some View {
-        Text("Profile")
-            .foregroundColor(.theme.textPrimary)
+        ZStack {
+            CharacterSetupView(
+                user: $user,
+                onBack: {},
+                onComplete: { saveChanges() },
+                showsBackButton: false,
+                submitTitle: "Save Changes"
+            )
+            .id(user.id)
+
+            if showSaved {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill").foregroundColor(.white)
+                        Text("Saved").foregroundColor(.white).font(.theme.headline)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color.black.opacity(0.8))
+                    .cornerRadius(12)
+                    .padding(.bottom, 24)
+                }
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.2), value: showSaved)
+            }
+        }
+        .onAppear(perform: loadUser)
+    }
+
+    private func loadUser() {
+        if let persisted = users.sorted(by: { ($0.updatedAt) > ($1.updatedAt) }).first(where: { ($0.appearanceProfileText?.isEmpty == false) }) ?? users.first {
+            user = persisted
+            return
+        }
+        // user already initialized with a default id
+        modelContext.insert(user)
+        try? modelContext.save()
+    }
+
+    private func saveChanges() {
+        user.updatedAt = Date()
+        try? modelContext.save()
+        showSaved = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            withAnimation { showSaved = false }
+        }
     }
 }
 
@@ -442,6 +492,8 @@ struct CharacterSetupView: View {
     @Binding var user: User
     let onBack: () -> Void
     let onComplete: () -> Void
+    var showsBackButton: Bool = true
+    var submitTitle: String = "Continue"
 
     @State private var age: Int = 25
     @State private var unitSystem: UnitSystem = .imperial
@@ -457,18 +509,23 @@ struct CharacterSetupView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Button(action: onBack) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "chevron.left").font(.system(size: 18, weight: .medium))
-                        Text("Back").font(.theme.body)
+            if showsBackButton {
+                HStack {
+                    Button(action: onBack) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "chevron.left").font(.system(size: 18, weight: .medium))
+                            Text("Back").font(.theme.body)
+                        }
+                        .foregroundColor(.theme.primary)
                     }
-                    .foregroundColor(.theme.primary)
+                    Spacer()
                 }
-                Spacer()
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+            } else {
+                // Maintain top spacing without a back button
+                Spacer().frame(height: 20)
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 20)
 
             ScrollView {
                 VStack(spacing: 20) {
@@ -571,7 +628,7 @@ struct CharacterSetupView: View {
                 .padding(24)
             }
 
-            Button("Continue") { applyToUser(); onComplete() }
+            Button(submitTitle) { applyToUser(); onComplete() }
                 .buttonStyle(PrimaryButtonStyle(disabled: !isValid))
                 .disabled(!isValid)
                 .padding(.horizontal, 24)
@@ -579,6 +636,9 @@ struct CharacterSetupView: View {
         }
         .background(Color.theme.background)
         .onAppear(perform: loadFromUser)
+        .onChange(of: user.id) { _ in
+            loadFromUser()
+        }
     }
 
     private var isValid: Bool { age >= 13 && age <= 90 }
@@ -600,7 +660,7 @@ struct CharacterSetupView: View {
     }
 
     private func loadFromUser() {
-        unitSystem = user.unitSystem
+        unitSystem = user.unitSystem ?? .imperial
         if let uAge = user.age { age = uAge }
         if let st = user.skinTone { skinTone = st }
         if let hc = user.hairColor { hairColor = hc }
