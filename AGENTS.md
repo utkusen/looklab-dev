@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## App Purpose & UX Principles
-- Generates outfit images by sending selected clothes to Google Vertex AI (`gemini-2.5-flash-image-preview`).
+- Generates outfit images by sending selected clothes to Google Gemini API (`gemini-2.5-flash-image-preview`).
 - Design: dark, modern, premium; keep flows simple and uncluttered.
 
 ## Project Structure
@@ -33,10 +33,10 @@
 - Prioritize UI tests for onboarding, wardrobe upload, look build, and re-create flows.
 - Name: `FeatureNameTests.swift`; run with the iOS tests command above.
 
-## Commits & PRs
-- Commits: imperative, concise (e.g., “Fix Firebase initialization order”).
-- PRs: include description, test steps, and screenshots for UI.
-
 ## Security
 - Never commit real `GoogleService-Info.plist` or secrets.
 - Validate Firestore/Storage rules with emulators before deploy.
+
+## Writing Style
+
+- After a task done, don't write very long text. Summarize what you did and give directions to user if you need.
