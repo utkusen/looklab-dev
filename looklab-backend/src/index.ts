@@ -121,7 +121,13 @@ export const buildLook = onCall({ secrets: [GEMINI_API_KEY] }, async (request) =
   pushArrayParts(parts, "ACCESSORIES", data.ACCESSORIES);
   pushArrayParts(parts, "FULL_OUTFIT", data.FULL_OUTFIT);
 
-  if (data.ENV_INFO) parts.push({ text: `ENV_INFO: ${data.ENV_INFO}` });
+  if (data.ENV_INFO) {
+    const env = String(data.ENV_INFO).toLowerCase();
+    parts.push({ text: `ENV_INFO: ${data.ENV_INFO}` });
+    if (env.includes("street") || env.includes("city")) {
+      parts.push({ text: "NOTES: outdoor city street; avoid mirrors and elevators; not a mirror selfie" });
+    }
+  }
   if (data.NOTES) parts.push({ text: `NOTES: ${data.NOTES}` });
 
   const payload = {

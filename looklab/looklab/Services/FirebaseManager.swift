@@ -178,7 +178,7 @@ final class FirebaseManager: ObservableObject {
         // Face/body descriptions from profile (text only)
         let faceDesc = faceDescription(from: user)
         let bodyDesc = bodyDescription(from: user)
-        let envInfo = background.displayName
+        let envInfo = envDescription(for: background)
 
         let data: [String: Any] = [
             "FACE_DESC": faceDesc,
@@ -264,5 +264,17 @@ final class FirebaseManager: ObservableObject {
             }
         }
         return nil
+    }
+
+    private func envDescription(for bg: BackgroundType) -> String {
+        switch bg {
+        case .elevatorMirror: return "elevator mirror selfie"
+        case .street: return "busy city street outdoors; not a mirror selfie; not indoors; no elevator"
+        case .restaurant: return "restaurant interior; no mirror; not an elevator"
+        case .cafe: return "cozy cafe setting; not a mirror; not an elevator"
+        case .plainBackground: return "plain studio background"
+        case .beach: return "sandy beach in daylight"
+        case .originalBackground: return "original photo background"
+        }
     }
 }

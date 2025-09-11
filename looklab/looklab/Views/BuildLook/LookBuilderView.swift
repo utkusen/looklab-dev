@@ -22,6 +22,7 @@ struct LookBuilderView: View {
     @State private var isDone = false
     @State private var showDetails = true
     @State private var generatedImage: UIImage?
+    @State private var isSpinning = false
 
     var body: some View {
         ZStack {
@@ -31,7 +32,7 @@ struct LookBuilderView: View {
                 header
                 progressSection
                 if !isDone { selectionSummary }
-                Spacer(minLength: 8)
+                if !isDone { Spacer(minLength: 8) }
                 if isDone { resultSection } else { footerButtons }
             }
             .padding(.horizontal, 16)
@@ -79,8 +80,16 @@ struct LookBuilderView: View {
                     .frame(height: 120)
 
                 HStack(spacing: 16) {
-                    ProgressRing(progress: progress)
-                        .frame(width: 66, height: 66)
+                    if !isDone {
+                        // Single self-animating spinner during build
+                        IndeterminateSpinner()
+                            .frame(width: 66, height: 66)
+                    } else {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.theme.primary)
+                            .frame(width: 66, height: 66)
+                    }
                     VStack(alignment: .leading, spacing: 8) {
                         Text(isDone ? "Done" : phase.rawValue)
                             .font(.theme.headline)
@@ -92,6 +101,12 @@ struct LookBuilderView: View {
                     Spacer()
                 }
                 .padding(.horizontal, 16)
+            }
+
+            if !isDone {
+                Text("This usually takes about 8 seconds")
+                    .font(.theme.caption2)
+                    .foregroundColor(.theme.textSecondary)
             }
 
             if showDetails && !isDone {
@@ -216,41 +231,40 @@ struct LookBuilderView: View {
                 let image = try await FirebaseManager.shared.buildLook(selectedItems: selectedItems, background: background, user: user)
                 await MainActor.run {
                     generatedImage = image
-                    withAnimation(.spring(response: 0.45, dampingFraction: 0.9)) {
-                        phase = .complete
-                        progress = 1.0
-                        isDone = true
-                    }
+                    phase = .complete
+                    progress = 1.0
+                    isDone = true
                 }
             } catch {
                 // In a real app, surface error UI. For now, mark complete without image.
                 await MainActor.run {
-                    withAnimation {
-                        phase = .complete
-                        progress = 1.0
-                        isDone = true
-                    }
+                    phase = .complete
+                    progress = 1.0
+                    isDone = true
                 }
             }
         }
     }
 
     private func animateProgress() {
-        let steps: [(LookBuildPhase, Double)] = [
-            (.uploading, 0.25),
-            (.composing, 0.5),
-            (.generating, 0.8),
-            (.enhancing, 0.95)
+        // Smooth, even pacing across phases ~8s total pre-completion
+        isSpinning = true
+        let phaseSchedule: [(LookBuildPhase, Double)] = [
+            (.uploading, 0.2),
+            (.composing, 0.45),
+            (.generating, 0.7),
+            (.enhancing, 0.9)
         ]
         var delay: Double = 0
-        for (p, end) in steps {
+        for (p, end) in phaseSchedule {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                withAnimation(.easeInOut(duration: 0.8)) {
+                guard !isDone else { return }
+                withAnimation(.easeInOut(duration: 0.9)) {
                     phase = p
                     progress = end
                 }
             }
-            delay += 1.0
+            delay += 2.0
         }
     }
 
@@ -286,26 +300,18 @@ struct LookBuilderView: View {
 
 // MARK: - Components
 
-private struct ProgressRing: View {
-    let progress: Double // 0...1
+private struct IndeterminateSpinner: View {
+    @State private var rotate = false
     var body: some View {
-        ZStack {
-            Circle()
-                .stroke(Color.theme.surfaceSecondary, lineWidth: 8)
-            Circle()
-                .trim(from: 0, to: progress)
-                .stroke(
-                    AngularGradient(
-                        gradient: Gradient(colors: [Color.theme.primary, Color.theme.accent, Color.theme.primary]),
-                        center: .center
-                    ),
-                    style: StrokeStyle(lineWidth: 8, lineCap: .round)
-                )
-                .rotationEffect(.degrees(-90))
-            Image(systemName: progress >= 1 ? "checkmark" : "sparkles")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.theme.primary)
-        }
+        Circle()
+            .trim(from: 0.1, to: 0.9)
+            .stroke(Color.theme.accent, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+            .rotationEffect(.degrees(rotate ? 360 : 0))
+            .onAppear {
+                withAnimation(.linear(duration: 1.0).repeatForever(autoreverses: false)) {
+                    rotate = true
+                }
+            }
     }
 }
 
