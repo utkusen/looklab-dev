@@ -60,10 +60,11 @@ struct BuildLookView: View {
 
                 Button("Build") {
                     print("User selected background: raw=\(background.rawValue) name=\(background.displayName)")
-                    let items = selectedItemsFromState.isEmpty ? mockSelectedItems() : selectedItemsFromState
+                    let items = selectedItemsFromState
                     builderInput = LookBuilderInput(items: items, background: background, envInfo: background.envInfoText)
                 }
-                .buttonStyle(PrimaryButtonStyle(disabled: false))
+                .buttonStyle(PrimaryButtonStyle(disabled: selectedItemsFromState.isEmpty))
+                .disabled(selectedItemsFromState.isEmpty)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 12)
             }
