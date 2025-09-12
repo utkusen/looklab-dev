@@ -6,7 +6,27 @@
       "npm --prefix \"$RESOURCE_DIR\" run build"
     ]
   },
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/buildLook",
+        "function": {
+          "functionId": "buildLook",
+          "region": "us-central1"
+        }
+      }
+    ]
+  },
   "emulators": {
+    "hosting": {
+      "port": 5000
+    },
     "functions": {
       "port": 5001
     }

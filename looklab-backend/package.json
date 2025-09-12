@@ -9,8 +9,8 @@
   },
   "scripts": {
     "build": "tsc -p .",
-    "serve": "firebase emulators:start --only functions",
-    "deploy": "firebase deploy --only functions"
+    "serve": "firebase emulators:start --only hosting,functions",
+    "deploy": "firebase deploy --only hosting,functions"
   },
   "dependencies": {
     "firebase-admin": "^12.6.0",
