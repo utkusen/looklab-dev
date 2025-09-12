@@ -108,6 +108,40 @@ export const buildLook = onCall({ secrets: [GEMINI_API_KEY] }, async (request) =
     throw new HttpsError("unauthenticated", "Authentication required to call buildLook.");
   }
 
+  // Enforce origin host restriction (only allow via our custom domain when not on emulators)
+  const isEmulator = !!(process.env.FUNCTIONS_EMULATOR || process.env.FIREBASE_EMULATOR_HUB);
+  if (!isEmulator) {
+    const headers = request.rawRequest?.headers || {};
+    const xfHost = (headers["x-forwarded-host"] || headers["X-Forwarded-Host"]) as string | undefined;
+    const host = (headers["host"] || headers["Host"]) as string | undefined;
+    const referer = (headers["referer"] || headers["Referer"]) as string | undefined;
+    const origin = (headers["origin"] || headers["Origin"]) as string | undefined;
+
+    const allowed = (process.env.ALLOWED_FUNCTION_HOSTS || "looklab.utkusen.com")
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+
+    const pickHost = (url?: string) => {
+      if (!url) return "";
+      try { return new URL(url).host.toLowerCase(); } catch { return ""; }
+    };
+
+    const observed = [
+      (xfHost || "").toLowerCase(),
+      (host || "").toLowerCase(),
+      pickHost(referer),
+      pickHost(origin),
+    ].filter(Boolean);
+
+    const isAllowed = observed.some((h) => allowed.some((a) => h === a || h.endsWith(`.${a}`)));
+
+    if (!isAllowed) {
+      logger.warn("Rejected request due to host restriction", { observed, allowed });
+      throw new HttpsError("permission-denied", "Requests must come via allowed domain.");
+    }
+  }
+
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     logger.error("Missing GEMINI_API_KEY env var");
