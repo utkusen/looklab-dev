@@ -55,11 +55,6 @@ struct LookBuilderView: View {
                 Text(isDone ? "Your Look is Ready" : "Building Your Look")
                     .font(.theme.title3)
                     .foregroundColor(.theme.textPrimary)
-                if !isDone {
-                    Text(phase.rawValue)
-                        .font(.theme.caption2)
-                        .foregroundColor(.theme.textSecondary)
-                }
             }
             Spacer()
             Button(action: { withAnimation { showDetails.toggle() } }) {
