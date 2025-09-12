@@ -80,4 +80,21 @@ final class LookLibraryService {
         context.delete(look)
         try? context.save()
     }
+
+    // Delete a category; reassign contained looks to Default. Returns the default category.
+    @discardableResult
+    func deleteCategory(_ category: LookCategory, in context: ModelContext) -> LookCategory {
+        let def = ensureDefaultCategory(userID: category.userID, in: context)
+        // Prevent deleting the default category itself
+        if category.id == def.id { return def }
+
+        // Move any looks to default
+        let looks = (try? context.fetch(FetchDescriptor<Look>())) ?? []
+        for look in looks where look.category == category.id {
+            assign(look, to: def, in: context)
+        }
+        context.delete(category)
+        try? context.save()
+        return def
+    }
 }

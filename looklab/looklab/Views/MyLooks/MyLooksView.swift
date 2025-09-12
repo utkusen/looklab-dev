@@ -17,6 +17,7 @@ struct MyLooksView: View {
     @State private var newCategoryName: String = ""
     @State private var previewLook: Look? = nil
     @State private var pendingDelete: Look? = nil
+    @State private var pendingDeleteCategory: LookCategory? = nil
 
     private var userID: String {
         Auth.auth().currentUser?.uid ?? users.first?.id ?? "local"
@@ -98,6 +99,21 @@ struct MyLooksView: View {
             } message: {
                 Text("This will remove the look permanently.")
             }
+            .alert("Delete Category?", isPresented: Binding(
+                get: { pendingDeleteCategory != nil },
+                set: { if !$0 { pendingDeleteCategory = nil } }
+            )) {
+                Button("Delete", role: .destructive) {
+                    if let cat = pendingDeleteCategory {
+                        let def = LookLibraryService.shared.deleteCategory(cat, in: modelContext)
+                        if selectedCategoryID == cat.id { selectedCategoryID = def.id }
+                    }
+                    pendingDeleteCategory = nil
+                }
+                Button("Cancel", role: .cancel) { pendingDeleteCategory = nil }
+            } message: {
+                Text("Looks inside will be moved to Default.")
+            }
         }
     }
 
@@ -139,6 +155,17 @@ struct MyLooksView: View {
                         selected: selectedCategoryID == cat.id,
                         onTap: { selectedCategoryID = cat.id }
                     )
+                    .contextMenu {
+                        if !isDefault(cat) {
+                            Button(role: .destructive) {
+                                pendingDeleteCategory = cat
+                            } label: {
+                                Label("Delete Category", systemImage: "trash")
+                            }
+                        } else {
+                            Label("Default category", systemImage: "lock")
+                        }
+                    }
                     .dropDestination(for: String.self) { items, _ in
                         // Move dragged look to this category
                         guard let lookID = items.first else { return false }
@@ -171,6 +198,11 @@ struct MyLooksView: View {
     private func ensureDefaults() {
         let defaultCategory = LookLibraryService.shared.ensureDefaultCategory(userID: userID, in: modelContext)
         if selectedCategoryID == nil { selectedCategoryID = defaultCategory.id }
+    }
+
+    private func isDefault(_ cat: LookCategory) -> Bool {
+        let def = LookLibraryService.shared.ensureDefaultCategory(userID: userID, in: modelContext)
+        return def.id == cat.id || cat.name.lowercased() == "default"
     }
 }
 
