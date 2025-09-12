@@ -12,6 +12,7 @@ import FirebaseAuth
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var firebaseManager = FirebaseManager.shared
+    @StateObject private var tabRouter = TabRouter()
     @Query private var users: [User]
     
     var body: some View {
@@ -25,6 +26,7 @@ struct ContentView: View {
                         // Check if onboarding is complete
                         if currentUser.isOnboardingComplete {
                             MainTabView()
+                                .environmentObject(tabRouter)
                         } else {
                             OnboardingFlowView(user: currentUser)
                         }
@@ -320,37 +322,43 @@ struct SecondaryButtonStyle: ButtonStyle {
 }
 
 struct MainTabView: View {
+    @EnvironmentObject var router: TabRouter
     var body: some View {
-        TabView {
+        TabView(selection: $router.selection) {
             WardrobeView()
                 .tabItem {
                     Image(systemName: "tshirt")
                     Text("Wardrobe")
                 }
+                .tag(MainTab.wardrobe)
             
             BuildLookView()
                 .tabItem {
                     Image(systemName: "sparkles")
                     Text("Build Look")
                 }
+                .tag(MainTab.build)
             
             MyLooksView()
                 .tabItem {
                     Image(systemName: "heart")
                     Text("My Looks")
                 }
+                .tag(MainTab.myLooks)
             
             CalendarView()
                 .tabItem {
                     Image(systemName: "calendar")
                     Text("Calendar")
                 }
+                .tag(MainTab.calendar)
             
             ProfileView()
                 .tabItem {
                     Image(systemName: "person")
                     Text("Profile")
                 }
+                .tag(MainTab.profile)
         }
         .accentColor(.theme.primary)
     }

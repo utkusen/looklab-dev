@@ -28,6 +28,7 @@ struct LookBuilderView: View {
     @State private var isSpinning = false
     @State private var showSaveSheet = false
     @State private var pendingImageToSave: UIImage? = nil
+    @State private var draftLookID: String? = nil
 
     var body: some View {
         ZStack {
@@ -184,13 +185,15 @@ struct LookBuilderView: View {
             .sheet(isPresented: $showSaveSheet) {
                 SaveLookCategorySheet(
                     image: pendingImageToSave,
+                    existingLookID: draftLookID,
                     selectedItems: selectedItems,
                     background: background,
                     onSaved: {
                         showSaveSheet = false
+                        draftLookID = nil
                         onSaved()
                     },
-                    onCancel: { showSaveSheet = false }
+                    onCancel: { showSaveSheet = false; draftLookID = nil }
                 )
                 .preferredColorScheme(.dark)
             }
@@ -304,34 +307,83 @@ struct LookBuilderView: View {
         if userCats.isEmpty {
             quickSaveToDefault(image: image, userID: userID)
         } else {
+            // Create a draft Look first with embedded image data, so save sheet doesn't depend on image passthrough
+            let draft = createDraftLook(with: image, userID: userID)
+            draftLookID = draft.id
             pendingImageToSave = image
             showSaveSheet = true
         }
     }
 
-    private func quickSaveToDefault(image: UIImage, userID: String) {
-        guard let path = saveImageToDocuments(image: image) else { return }
+    private func createDraftLook(with image: UIImage, userID: String) -> Look {
+        // Encode and persist best-effort
+        let dataAndExt: (Data, String)? = {
+            if let jpg = image.jpegData(compressionQuality: 0.92) { return (jpg, "jpg") }
+            if let png = image.pngData() { return (png, "png") }
+            return nil
+        }()
+        var filename: String? = nil
+        var urlString: String? = nil
+        if let (data, ext) = dataAndExt, let dir = ImageStorage.documentsDirectory() {
+            let fn = "generated_look_\(UUID().uuidString).\(ext)"
+            let url = dir.appendingPathComponent(fn)
+            if (try? data.write(to: url, options: .atomic)) != nil { filename = fn; urlString = url.absoluteString }
+        }
         let look = Look(userID: userID,
                         name: "My Look",
                         clothingItemIDs: selectedItems.map { $0.id },
                         backgroundType: background)
-        look.generatedImageURLs = [path]
-        look.selectedImageURL = path
+        if let (data, _) = dataAndExt { look.selectedImageData = data }
+        if let f = filename { look.generatedImageURLs = [f] }
+        if let u = urlString { look.selectedImageURL = u }
+        modelContext.insert(look)
+        try? modelContext.save()
+        return look
+    }
+
+    private func quickSaveToDefault(image: UIImage, userID: String) {
+        // Prepare data and persist best-effort to disk
+        let dataAndExt: (Data, String)? = {
+            if let jpg = image.jpegData(compressionQuality: 0.92) { return (jpg, "jpg") }
+            if let png = image.pngData() { return (png, "png") }
+            return nil
+        }()
+        var filename: String? = nil
+        var urlString: String? = nil
+        if let (data, ext) = dataAndExt, let dir = ImageStorage.documentsDirectory() {
+            let fn = "generated_look_\(UUID().uuidString).\(ext)"
+            let url = dir.appendingPathComponent(fn)
+            if (try? data.write(to: url, options: .atomic)) != nil { filename = fn; urlString = url.absoluteString }
+        }
+        let look = Look(userID: userID,
+                        name: "My Look",
+                        clothingItemIDs: selectedItems.map { $0.id },
+                        backgroundType: background)
+        if let (data, _) = dataAndExt { look.selectedImageData = data }
+        if let f = filename { look.generatedImageURLs = [f] }
+        if let u = urlString { look.selectedImageURL = u }
         modelContext.insert(look)
         let def = LookLibraryService.shared.ensureDefaultCategory(userID: userID, in: modelContext)
         LookLibraryService.shared.assign(look, to: def, in: modelContext)
         try? modelContext.save()
+        print("[QuickSave] imageData bytes=\(dataAndExt?.0.count ?? 0) filename=\(filename ?? "-") url=\(urlString ?? "-") category=\(def.name)")
         onSaved()
     }
 
     private func saveImageToDocuments(image: UIImage) -> String? {
-        guard let data = image.pngData() ?? image.jpegData(compressionQuality: 0.92) else { return nil }
-        let filename = "generated_look_\(UUID().uuidString).png"
-        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(filename)
-        guard let url else { return nil }
+        // Prefer JPEG to reduce size; fallback to PNG
+        let dataAndExt: (Data, String)? = {
+            if let jpg = image.jpegData(compressionQuality: 0.92) { return (jpg, "jpg") }
+            if let png = image.pngData() { return (png, "png") }
+            return nil
+        }()
+        guard let (data, ext) = dataAndExt else { return nil }
+        let filename = "generated_look_\(UUID().uuidString).\(ext)"
+        guard let dir = ImageStorage.documentsDirectory() else { return nil }
+        let url = dir.appendingPathComponent(filename)
         do {
-            try data.write(to: url)
-            return url.path
+            try data.write(to: url, options: .atomic)
+            return filename
         } catch {
             return nil
         }

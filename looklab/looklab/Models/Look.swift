@@ -10,6 +10,7 @@ final class Look {
     var backgroundType: BackgroundType
     var generatedImageURLs: [String]
     var selectedImageURL: String?
+    @Attribute(.externalStorage) var selectedImageData: Data?
     var category: String?
     var createdAt: Date
     var updatedAt: Date

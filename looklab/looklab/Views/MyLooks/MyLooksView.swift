@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
 import FirebaseAuth
+import UIKit
 
 private let lookDragType = UTType.plainText
 
@@ -169,7 +170,14 @@ private struct LookThumbCard: View {
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color.theme.surface)
                     .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.theme.border, lineWidth: 1))
-                if let path = look.selectedImageURL, let ui = loadImage(from: path) {
+                if let data = look.selectedImageData, let ui = UIImage(data: data) {
+                    Image(uiImage: ui)
+                        .resizable()
+                        .scaledToFit()
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .padding(6)
+                } else if let stored = look.selectedImageURL ?? look.generatedImageURLs.first,
+                          let ui = ImageStorage.loadImage(from: stored) {
                     Image(uiImage: ui)
                         .resizable()
                         .scaledToFit()
@@ -187,6 +195,13 @@ private struct LookThumbCard: View {
                 }
             }
             .frame(height: 200)
+            .onAppear {
+                let hasData = look.selectedImageData != nil
+                let urlStr = look.selectedImageURL ?? "-"
+                let filename = look.generatedImageURLs.first ?? "-"
+                let resolved = (look.selectedImageURL != nil) ? (ImageStorage.resolveURL(from: look.selectedImageURL!)?.path ?? "-") : (ImageStorage.resolveURL(from: filename)?.path ?? "-")
+                print("[MyLooks] look=\(look.id) hasData=\(hasData) url=\(urlStr) filename=\(filename) resolved=\(resolved)")
+            }
             Text(look.name)
                 .font(.theme.caption1)
                 .foregroundColor(.theme.textPrimary)
@@ -195,16 +210,7 @@ private struct LookThumbCard: View {
         .background(Color.clear)
     }
 
-    private func loadImage(from path: String) -> UIImage? {
-        if path.lowercased().hasPrefix("/") {
-            return UIImage(contentsOfFile: path)
-        }
-        // fallback: try file URL
-        if let url = URL(string: path) {
-            if url.isFileURL { return UIImage(contentsOfFile: url.path) }
-        }
-        return UIImage(contentsOfFile: path)
-    }
+    // Loading uses ImageStorage utility now.
 }
 
 private struct NewCategorySheet: View {

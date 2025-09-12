@@ -5,6 +5,7 @@ import SwiftData
 // Design-first: a minimal selection summary and a Build button.
 // The real selection UI will replace the placeholders later.
 struct BuildLookView: View {
+    @EnvironmentObject var router: TabRouter
     @Environment(\.modelContext) private var modelContext
     @Query private var items: [ClothingItem]
 
@@ -116,7 +117,10 @@ struct BuildLookView: View {
                 envInfo: input.envInfo,
                 extraNotes: input.notes,
                 onCancel: { builderInput = nil },
-                onSaved: { builderInput = nil }
+                onSaved: {
+                    builderInput = nil
+                    router.selection = .myLooks
+                }
             )
             .preferredColorScheme(.dark)
         }

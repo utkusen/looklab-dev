@@ -8,6 +8,7 @@ struct SaveLookCategorySheet: View {
     @Query private var users: [User]
 
     let image: UIImage?
+    let existingLookID: String?
     let selectedItems: [ClothingItem]
     let background: BackgroundType
     var onSaved: () -> Void
@@ -86,38 +87,59 @@ struct SaveLookCategorySheet: View {
     }
 
     private func save() {
-        guard let img = image else { return }
-        guard let path = saveImageToDocuments(image: img) else { return }
-
-        let look = Look(userID: userID,
+        // If a draft look exists, update it; otherwise create one now.
+        let look: Look
+        if let id = existingLookID,
+           let found = (try? modelContext.fetch(FetchDescriptor<Look>()))?.first(where: { $0.id == id }) {
+            look = found
+        } else {
+            look = Look(userID: userID,
                         name: "My Look",
                         clothingItemIDs: selectedItems.map { $0.id },
                         backgroundType: background)
-        look.generatedImageURLs = [path]
-        look.selectedImageURL = path
-        modelContext.insert(look)
+            modelContext.insert(look)
+        }
+
+        // Ensure image availability: use existing data if present; otherwise persist from provided image
+        var savedFilename: String? = nil
+        var savedURLString: String? = nil
+        if look.selectedImageData == nil, let img = image {
+            if let jpg = img.jpegData(compressionQuality: 0.92) {
+                look.selectedImageData = jpg
+                let res = persist(filenameSuffix: "jpg", data: jpg)
+                savedFilename = res?.filename
+                savedURLString = res?.urlString
+            } else if let png = img.pngData() {
+                look.selectedImageData = png
+                let res = persist(filenameSuffix: "png", data: png)
+                savedFilename = res?.filename
+                savedURLString = res?.urlString
+            }
+        }
+        if let f = savedFilename { look.generatedImageURLs = [f] }
+        if let u = savedURLString { look.selectedImageURL = u }
+
+        print("[SaveLookSheet] imageData bytes=\(look.selectedImageData?.count ?? 0) filename=\(savedFilename ?? look.generatedImageURLs.first ?? "-") url=\(savedURLString ?? look.selectedImageURL ?? "-")")
+
         if let catID = selectedCategoryID,
            let cat = categories.first(where: { $0.id == catID }) {
             LookLibraryService.shared.assign(look, to: cat, in: modelContext)
+            print("Saved Look id=\(look.id) filename=\(savedFilename ?? look.generatedImageURLs.first ?? "-") url=\(savedURLString ?? look.selectedImageURL ?? "-") category=\(cat.name)")
         } else {
             let def = LookLibraryService.shared.ensureDefaultCategory(userID: userID, in: modelContext)
             LookLibraryService.shared.assign(look, to: def, in: modelContext)
+            print("Saved Look id=\(look.id) filename=\(savedFilename ?? look.generatedImageURLs.first ?? "-") url=\(savedURLString ?? look.selectedImageURL ?? "-") category=\(def.name)")
         }
         try? modelContext.save()
         onSaved()
     }
 
-    private func saveImageToDocuments(image: UIImage) -> String? {
-        guard let data = image.pngData() ?? image.jpegData(compressionQuality: 0.92) else { return nil }
-        let filename = "generated_look_\(UUID().uuidString).png"
-        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(filename)
-        guard let url else { return nil }
-        do {
-            try data.write(to: url)
-            return url.path
-        } catch {
-            return nil
-        }
+    private func persist(filenameSuffix: String, data: Data) -> (filename: String, urlString: String)? {
+        guard let dir = ImageStorage.documentsDirectory() else { return nil }
+        let filename = "generated_look_\(UUID().uuidString).\(filenameSuffix)"
+        let url = dir.appendingPathComponent(filename)
+        if (try? data.write(to: url, options: .atomic)) != nil { return (filename, url.absoluteString) }
+        return nil
     }
 }
 
