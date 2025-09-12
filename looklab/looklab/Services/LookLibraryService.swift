@@ -57,5 +57,27 @@ final class LookLibraryService {
               let target = cats.first(where: { $0.id == targetID }) else { return }
         assign(look, to: target, in: context)
     }
-}
 
+    // MARK: - Delete
+    func delete(look: Look, in context: ModelContext) {
+        // Remove from its category list
+        if let catID = look.category {
+            let cats = (try? context.fetch(FetchDescriptor<LookCategory>())) ?? []
+            if let cat = cats.first(where: { $0.id == catID }) {
+                cat.lookIDs.removeAll { $0 == look.id }
+            }
+        }
+        // Attempt to remove stored image file(s) (best-effort)
+        if let stored = look.selectedImageURL ?? look.generatedImageURLs.first,
+           let url = ImageStorage.resolveURL(from: stored) {
+            try? FileManager.default.removeItem(at: url)
+        }
+        for name in look.generatedImageURLs {
+            if let url = ImageStorage.resolveURL(from: name) {
+                try? FileManager.default.removeItem(at: url)
+            }
+        }
+        context.delete(look)
+        try? context.save()
+    }
+}

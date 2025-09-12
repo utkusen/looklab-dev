@@ -16,6 +16,7 @@ struct MyLooksView: View {
     @State private var showingNewCategory = false
     @State private var newCategoryName: String = ""
     @State private var previewLook: Look? = nil
+    @State private var pendingDelete: Look? = nil
 
     private var userID: String {
         Auth.auth().currentUser?.uid ?? users.first?.id ?? "local"
@@ -55,9 +56,16 @@ struct MyLooksView: View {
                                     LookThumbCard(look: look)
                                 }
                                 .buttonStyle(.plain)
-                                    .onDrag {
-                                        NSItemProvider(object: look.id as NSString)
+                                .contextMenu {
+                                    Button(role: .destructive) {
+                                        pendingDelete = look
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
                                     }
+                                }
+                                .onDrag {
+                                    NSItemProvider(object: look.id as NSString)
+                                }
                             }
                         }
                         .padding(.horizontal, 16)
@@ -77,6 +85,18 @@ struct MyLooksView: View {
                     LookPreviewSheet(look: look)
                         .preferredColorScheme(.dark)
                 }
+            }
+            .alert("Delete Look?", isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            )) {
+                Button("Delete", role: .destructive) {
+                    if let l = pendingDelete { LookLibraryService.shared.delete(look: l, in: modelContext) }
+                    pendingDelete = nil
+                }
+                Button("Cancel", role: .cancel) { pendingDelete = nil }
+            } message: {
+                Text("This will remove the look permanently.")
             }
         }
     }
