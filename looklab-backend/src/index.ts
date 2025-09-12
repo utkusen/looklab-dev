@@ -1,4 +1,4 @@
-import { onCall } from "firebase-functions/v2/https";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import { initializeApp } from "firebase-admin/app";
@@ -102,6 +102,12 @@ function extractImageFromResponse(resp: any): { data: string; mimeType: string }
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
 
 export const buildLook = onCall({ secrets: [GEMINI_API_KEY] }, async (request) => {
+  // Enforce authentication for callable function invocations
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Authentication required to call buildLook.");
+  }
+
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     logger.error("Missing GEMINI_API_KEY env var");
