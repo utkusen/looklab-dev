@@ -204,7 +204,7 @@ private struct BackgroundPicker: View {
         case .street: return "building.2"
         case .restaurant: return "fork.knife"
         case .cafe: return "cup.and.saucer"
-        case .plainBackground: return "square"
+        case .plainBackground: return "button.horizontal"
         case .beach: return "sun.max"
         case .originalBackground: return "photo"
         }

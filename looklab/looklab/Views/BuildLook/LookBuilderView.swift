@@ -40,22 +40,19 @@ struct LookBuilderView: View {
             .padding(.top, 12)
         }
         .onAppear(perform: startBuild)
+        .safeAreaInset(edge: .top) {
+            // Add consistent breathing room below the sheet’s top edge across devices
+            Color.clear.frame(height: 12)
+        }
     }
 
     private var header: some View {
         HStack(alignment: .center) {
-            Button(action: onCancel) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.theme.textPrimary)
-                    .frame(width: 36, height: 36)
-                    .background(Color.theme.surface)
-                    .cornerRadius(10)
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.theme.border, lineWidth: 1))
-            }
+            // Left spacer to keep title centered (matches chevron width)
+            Color.clear.frame(width: 36, height: 36)
             Spacer()
             VStack(spacing: 2) {
-                Text(isDone ? "Your Look is Ready" : "Building your look")
+                Text(isDone ? "Your Look is Ready" : "Building Your Look")
                     .font(.theme.title3)
                     .foregroundColor(.theme.textPrimary)
                 Text(isDone ? "Select your favorite" : phase.rawValue)

@@ -529,7 +529,6 @@ struct CharacterSetupView: View {
                     }
 
                     Card {
-                        HStack { SectionHeader(icon: "person", title: "Basics"); Spacer() }
 
                         // Age (use Picker list like metrics)
                         HStack(spacing: 12) {
