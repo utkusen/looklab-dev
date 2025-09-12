@@ -13,6 +13,7 @@ struct LookBuilderView: View {
     let selectedItems: [ClothingItem]
     let background: BackgroundType
     var envInfo: String? = nil
+    var extraNotes: String? = nil
     var onCancel: () -> Void
     var onSaved: () -> Void
 
@@ -224,7 +225,12 @@ struct LookBuilderView: View {
                 print("LookBuilder background raw=\(background.rawValue) name=\(background.displayName)")
                 let effectiveEnv = envInfo ?? background.envInfoText
                 print("LookBuilder startBuild envInfo=\(effectiveEnv)")
-                let image = try await FirebaseManager.shared.buildLook(selectedItems: selectedItems, envInfo: effectiveEnv, user: user)
+                let image = try await FirebaseManager.shared.buildLook(
+                    selectedItems: selectedItems,
+                    envInfo: effectiveEnv,
+                    user: user,
+                    notes: extraNotes
+                )
                 await MainActor.run {
                     generatedImage = image
                     phase = .complete

@@ -13,12 +13,14 @@ struct BuildLookView: View {
     @State private var selectedSingles: [ClothingCategory: String] = [:]
     @State private var background: BackgroundType = .elevatorMirror
     @State private var builderInput: LookBuilderInput?
+    @State private var extraNotes: String = ""
 
     private struct LookBuilderInput: Identifiable {
         let id = UUID()
         let items: [ClothingItem]
         let background: BackgroundType
         let envInfo: String
+        let notes: String
     }
 
     // Sample categories for this stub; real UI will allow picking from wardrobe/gallery
@@ -58,10 +60,42 @@ struct BuildLookView: View {
                     BackgroundPicker(background: $background)
                 }
 
+                // Extra Notes (Optional)
+                BuildCard {
+                    HStack { BuildSectionHeader(icon: "pencil.and.outline", title: "Extra Notes (Optional)"); Spacer() }
+                    ZStack(alignment: .topLeading) {
+                        TextEditor(text: $extraNotes)
+                            .font(.theme.subheadline)
+                            .foregroundColor(.theme.textPrimary)
+                            .frame(minHeight: 86, alignment: .topLeading)
+                            .padding(8)
+                            .background(Color.theme.surfaceSecondary)
+                            .cornerRadius(10)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.theme.border, lineWidth: 1)
+                            )
+                        // Visible placeholder above the editor when empty
+                        if extraNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            Text("Example: Shirt tucked in, sleeves rolled.")
+                                .font(.theme.subheadline)
+                                .foregroundColor(.theme.textSecondary)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 14)
+                                .allowsHitTesting(false)
+                        }
+                    }
+                }
+
                 Button("Build") {
                     print("User selected background: raw=\(background.rawValue) name=\(background.displayName)")
                     let items = selectedItemsFromState
-                    builderInput = LookBuilderInput(items: items, background: background, envInfo: background.envInfoText)
+                    builderInput = LookBuilderInput(
+                        items: items,
+                        background: background,
+                        envInfo: background.envInfoText,
+                        notes: extraNotes
+                    )
                 }
                 .buttonStyle(PrimaryButtonStyle(disabled: selectedItemsFromState.isEmpty))
                 .disabled(selectedItemsFromState.isEmpty)
@@ -79,6 +113,7 @@ struct BuildLookView: View {
                 selectedItems: input.items,
                 background: input.background,
                 envInfo: input.envInfo,
+                extraNotes: input.notes,
                 onCancel: { builderInput = nil },
                 onSaved: { builderInput = nil }
             )

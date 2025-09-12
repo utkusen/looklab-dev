@@ -160,6 +160,11 @@ final class FirebaseManager: ObservableObject {
 
     // New signature: pass envInfo explicitly from UI
     func buildLook(selectedItems: [ClothingItem], envInfo: String, user: User?) async throws -> UIImage {
+        return try await buildLook(selectedItems: selectedItems, envInfo: envInfo, user: user, notes: nil)
+    }
+
+    // Newest signature: explicit notes from UI (sent as NOTES)
+    func buildLook(selectedItems: [ClothingItem], envInfo: String, user: User?, notes: String?) async throws -> UIImage {
         // Map items to categories expected by backend
         var tops: [[String: Any]] = []
         var bottoms: [[String: Any]] = []
@@ -190,11 +195,18 @@ final class FirebaseManager: ObservableObject {
         let faceDesc = faceDescription(from: user)
         let bodyDesc = bodyDescription(from: user)
 
+        // Prefer user-provided notes; fallback to profile text for continuity
+        let effectiveNotes: String = {
+            let trimmed = (notes ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty { return trimmed }
+            return user?.appearanceProfileText ?? ""
+        }()
+
         let data: [String: Any] = [
             "FACE_DESC": faceDesc,
             "BODY_DESC": bodyDesc,
             "ENV_INFO": envInfo,
-            "NOTES": user?.appearanceProfileText ?? "",
+            "NOTES": effectiveNotes,
             "TOPS": tops,
             "BOTTOMS": bottoms,
             "SHOES": shoes,
