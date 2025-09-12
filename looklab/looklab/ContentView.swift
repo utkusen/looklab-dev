@@ -356,12 +356,7 @@ struct MainTabView: View {
     }
 }
 
-struct MyLooksView: View {
-    var body: some View {
-        Text("My Looks")
-            .foregroundColor(.theme.textPrimary)
-    }
-}
+// MyLooksView now lives under Views/MyLooks
 
 struct CalendarView: View {
     var body: some View {

@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import FirebaseAuth
 
 enum LookBuildPhase: String, CaseIterable {
     case uploading = "Uploading items"
@@ -25,6 +26,8 @@ struct LookBuilderView: View {
     @State private var showDetails = true
     @State private var generatedImage: UIImage?
     @State private var isSpinning = false
+    @State private var showSaveSheet = false
+    @State private var pendingImageToSave: UIImage? = nil
 
     var body: some View {
         ZStack {
@@ -173,11 +176,24 @@ struct LookBuilderView: View {
             .frame(height: 340)
 
             // Primary action: Save
-            Button(action: saveLook) {
+            Button(action: { prepareSave() }) {
                 Label("Save to My Looks", systemImage: "square.and.arrow.down")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(PrimaryButtonStyle())
+            .sheet(isPresented: $showSaveSheet) {
+                SaveLookCategorySheet(
+                    image: pendingImageToSave,
+                    selectedItems: selectedItems,
+                    background: background,
+                    onSaved: {
+                        showSaveSheet = false
+                        onSaved()
+                    },
+                    onCancel: { showSaveSheet = false }
+                )
+                .preferredColorScheme(.dark)
+            }
 
             // Secondary actions: Re-Create and Try Another
             HStack(spacing: 12) {
@@ -280,19 +296,31 @@ struct LookBuilderView: View {
         }
     }
 
-    private func saveLook() {
+    private func prepareSave() {
         guard let image = generatedImage else { return }
-        // Persist image locally and create a Look entry
-        if let path = saveImageToDocuments(image: image) {
-            let look = Look(userID: selectedItems.first?.userID ?? UUID().uuidString,
-                            name: "My Look",
-                            clothingItemIDs: selectedItems.map { $0.id },
-                            backgroundType: background)
-            look.generatedImageURLs = [path]
-            look.selectedImageURL = path
-            modelContext.insert(look)
-            try? modelContext.save()
+        let userID = Auth.auth().currentUser?.uid ?? users.first?.id ?? "local"
+        let allCats = (try? modelContext.fetch(FetchDescriptor<LookCategory>())) ?? []
+        let userCats = allCats.filter { $0.userID == userID }
+        if userCats.isEmpty {
+            quickSaveToDefault(image: image, userID: userID)
+        } else {
+            pendingImageToSave = image
+            showSaveSheet = true
         }
+    }
+
+    private func quickSaveToDefault(image: UIImage, userID: String) {
+        guard let path = saveImageToDocuments(image: image) else { return }
+        let look = Look(userID: userID,
+                        name: "My Look",
+                        clothingItemIDs: selectedItems.map { $0.id },
+                        backgroundType: background)
+        look.generatedImageURLs = [path]
+        look.selectedImageURL = path
+        modelContext.insert(look)
+        let def = LookLibraryService.shared.ensureDefaultCategory(userID: userID, in: modelContext)
+        LookLibraryService.shared.assign(look, to: def, in: modelContext)
+        try? modelContext.save()
         onSaved()
     }
 
