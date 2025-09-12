@@ -15,6 +15,7 @@ struct MyLooksView: View {
     @State private var selectedCategoryID: String? = nil
     @State private var showingNewCategory = false
     @State private var newCategoryName: String = ""
+    @State private var previewLook: Look? = nil
 
     private var userID: String {
         Auth.auth().currentUser?.uid ?? users.first?.id ?? "local"
@@ -50,7 +51,10 @@ struct MyLooksView: View {
                     ScrollView {
                         LazyVGrid(columns: gridCols, spacing: 12) {
                             ForEach(looksInSelected, id: \.id) { look in
-                                LookThumbCard(look: look)
+                                Button(action: { previewLook = look }) {
+                                    LookThumbCard(look: look)
+                                }
+                                .buttonStyle(.plain)
                                     .onDrag {
                                         NSItemProvider(object: look.id as NSString)
                                     }
@@ -65,6 +69,15 @@ struct MyLooksView: View {
             .background(Color.theme.background.ignoresSafeArea())
             .onAppear(perform: ensureDefaults)
             .navigationBarHidden(true)
+            .sheet(isPresented: Binding(
+                get: { previewLook != nil },
+                set: { if !$0 { previewLook = nil } }
+            )) {
+                if let look = previewLook {
+                    LookPreviewSheet(look: look)
+                        .preferredColorScheme(.dark)
+                }
+            }
         }
     }
 
@@ -188,9 +201,6 @@ private struct LookThumbCard: View {
                         Image(systemName: "photo")
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(.theme.accent)
-                        Text(look.name)
-                            .font(.theme.caption1)
-                            .foregroundColor(.theme.textSecondary)
                     }
                 }
             }
@@ -202,15 +212,56 @@ private struct LookThumbCard: View {
                 let resolved = (look.selectedImageURL != nil) ? (ImageStorage.resolveURL(from: look.selectedImageURL!)?.path ?? "-") : (ImageStorage.resolveURL(from: filename)?.path ?? "-")
                 print("[MyLooks] look=\(look.id) hasData=\(hasData) url=\(urlStr) filename=\(filename) resolved=\(resolved)")
             }
-            Text(look.name)
-                .font(.theme.caption1)
-                .foregroundColor(.theme.textPrimary)
-                .lineLimit(1)
         }
         .background(Color.clear)
     }
 
     // Loading uses ImageStorage utility now.
+}
+
+// MARK: - Look Preview Sheet
+private struct LookPreviewSheet: View {
+    let look: Look
+    @Environment(\.dismiss) private var dismiss
+
+    private var image: UIImage? {
+        if let data = look.selectedImageData, let ui = UIImage(data: data) { return ui }
+        if let stored = look.selectedImageURL ?? look.generatedImageURLs.first,
+           let ui = ImageStorage.loadImage(from: stored) { return ui }
+        return nil
+    }
+
+    var body: some View {
+        NavigationView {
+            ZStack {
+                Color.theme.background.ignoresSafeArea()
+                if let img = image {
+                    Image(uiImage: img)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color.theme.background)
+                } else {
+                    VStack(spacing: 10) {
+                        Image(systemName: "photo")
+                            .font(.system(size: 28, weight: .semibold))
+                            .foregroundColor(.theme.accent)
+                        Text("No preview available")
+                            .font(.theme.subheadline)
+                            .foregroundColor(.theme.textSecondary)
+                    }
+                }
+            }
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                        .foregroundColor(.theme.textPrimary)
+                }
+            }
+        }
+    }
 }
 
 private struct NewCategorySheet: View {
