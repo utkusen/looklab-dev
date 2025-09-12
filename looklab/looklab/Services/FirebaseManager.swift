@@ -202,11 +202,21 @@ final class FirebaseManager: ObservableObject {
             return user?.appearanceProfileText ?? ""
         }()
 
+        // Map user fashion interest to backend GENDER field
+        let genderString: String = {
+            switch (user?.fashionInterest ?? .notSpecified) {
+            case .male: return "men"
+            case .female: return "women"
+            case .everything, .notSpecified: return "not specified"
+            }
+        }()
+
         let data: [String: Any] = [
             "FACE_DESC": faceDesc,
             "BODY_DESC": bodyDesc,
             "ENV_INFO": envInfo,
             "NOTES": effectiveNotes,
+            "GENDER": genderString,
             "TOPS": tops,
             "BOTTOMS": bottoms,
             "SHOES": shoes,
@@ -216,7 +226,7 @@ final class FirebaseManager: ObservableObject {
 
         // Debug (no base64): confirm values being sent
         print("buildLook ENV_INFO=\(envInfo)")
-        print("buildLook counts TOPS=\(tops.count) BOTTOMS=\(bottoms.count) SHOES=\(shoes.count) ACCESSORIES=\(accessories.count) FULL_OUTFIT=\(fullOutfit.count)")
+        print("buildLook counts TOPS=\(tops.count) BOTTOMS=\(bottoms.count) SHOES=\(shoes.count) ACCESSORIES=\(accessories.count) FULL_OUTFIT=\(fullOutfit.count) GENDER=\(genderString)")
 
         let result = try await functions.httpsCallable("buildLook").call(data)
         guard let dict = result.data as? [String: Any],

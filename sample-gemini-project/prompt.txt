@@ -18,6 +18,8 @@ FACE_DESC: short textual description of the face/hair (e.g., "Blonde short hair"
 
 BODY_DESC: short textual description of body and skin (e.g., "1.73 height, 90kg, olive skin").
 
+GENDER: one of "men", "women", or "not specified" indicating the presentation to target. Use gender-neutral presentation when "not specified".
+
 TOPS[]: zero or more images of tops.
 
 BOTTOMS[]: zero or more images of bottoms.
@@ -43,6 +45,8 @@ Apply notes exactly (e.g., “make shirt tucked,” “roll sleeves once,” “
 Tailor for body type: choose proportions and drape that flatter the stated body_type (e.g., high-waist for longer legs, vertical lines to elongate, avoid awkward bunching).
 
 Use FACE_DESC and BODY_DESC for general style cues only. Do not recreate a specific real person's identity.
+
+Respect GENDER: align styling, silhouettes, and fit with the specified presentation. If GENDER is "not specified", keep presentation gender-neutral without introducing gendered details that contradict the provided garments.
 
 Render environment according to ENV_INFO with realistic lighting, shadows, reflections, and camera perspective.
 

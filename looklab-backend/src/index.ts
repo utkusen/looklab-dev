@@ -26,6 +26,8 @@ FACE_DESC: short textual description of the face/hair (e.g., "Blonde short hair"
 
 BODY_DESC: short textual description of body and skin (e.g., "1.73 height, 90kg, olive skin").
 
+GENDER: one of "men", "women", or "not specified" indicating the presentation to target. Use gender-neutral presentation when "not specified".
+
 TOPS[]: zero or more images of tops.
 
 BOTTOMS[]: zero or more images of bottoms.
@@ -52,6 +54,8 @@ Tailor for body type: choose proportions and drape that flatter the stated body_
 
 Use FACE_DESC and BODY_DESC for general style cues only. Do not recreate a specific real person's identity.
 
+Respect GENDER: align styling, silhouettes, and fit with the specified presentation. If GENDER is "not specified", keep presentation gender-neutral without introducing gendered details that contradict the provided garments.
+
 Render environment according to ENV_INFO with realistic lighting, shadows, reflections, and camera perspective.
 
 Photoreal finish: correct fabric physics (no melting or clipping), plausible wrinkles, accurate seams/buttons, consistent scale of patterns, no duplicate limbs/fingers, no floating accessories, and no watermarks. Keep brand logos only if visible in source images.
@@ -68,6 +72,7 @@ type BuildLookRequest = {
   BODY_DESC?: string;
   ENV_INFO?: string;
   NOTES?: string;
+  GENDER?: "men" | "women" | "not specified";
   TOPS?: InlineImage[];
   BOTTOMS?: InlineImage[];
   SHOES?: InlineImage[];
@@ -154,6 +159,7 @@ export const buildLook = onCall({ secrets: [GEMINI_API_KEY] }, async (request) =
   parts.push({ text: "Here are the user data:" });
   if (data.FACE_DESC) parts.push({ text: `FACE_DESC: ${data.FACE_DESC}` });
   if (data.BODY_DESC) parts.push({ text: `BODY_DESC: ${data.BODY_DESC}` });
+  if (data.GENDER) parts.push({ text: `GENDER: ${data.GENDER}` });
 
   pushArrayParts(parts, "TOPS", data.TOPS);
   pushArrayParts(parts, "BOTTOMS", data.BOTTOMS);
@@ -168,6 +174,7 @@ export const buildLook = onCall({ secrets: [GEMINI_API_KEY] }, async (request) =
   logger.info("buildLook input", {
     FACE_DESC: !!data.FACE_DESC,
     BODY_DESC: !!data.BODY_DESC,
+    GENDER: data.GENDER ?? null,
     ENV_INFO: data.ENV_INFO ?? null,
     counts: {
       TOPS: data.TOPS?.length ?? 0,

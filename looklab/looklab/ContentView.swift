@@ -226,6 +226,10 @@ struct FashionInterestSelectionView: View {
                     Button(action: {
                         user.fashionInterest = interest
                         user.updatedAt = Date()
+                        // Persist selection immediately
+                        Task {
+                            try? await FirebaseManager.shared.saveUserData(user)
+                        }
                         onComplete()
                     }) {
                         HStack {
