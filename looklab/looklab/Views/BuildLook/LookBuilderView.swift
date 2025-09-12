@@ -33,7 +33,6 @@ struct LookBuilderView: View {
                 header
                 if !isDone { progressSection }
                 if !isDone { selectionSummary }
-                if !isDone { Spacer(minLength: 8) }
                 if isDone { resultSection } else { footerButtons }
             }
             .padding(.horizontal, 16)
@@ -198,20 +197,11 @@ struct LookBuilderView: View {
     }
 
     private var footerButtons: some View {
-        HStack(spacing: 12) {
-            Button(action: onCancel) {
-                Label("Cancel", systemImage: "xmark")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(SecondaryButtonStyle())
-
-            Button(action: { /* no-op during design */ }) {
-                Label("Building…", systemImage: "sparkles")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(true)
+        Button(action: onCancel) {
+            Label("Cancel", systemImage: "xmark")
+                .frame(maxWidth: .infinity)
         }
+        .buttonStyle(SecondaryButtonStyle())
         .padding(.bottom, 8)
     }
 
