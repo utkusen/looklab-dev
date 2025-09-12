@@ -490,9 +490,9 @@ struct CharacterSetupView: View {
     @State private var age: Int = 25
     @State private var unitSystem: UnitSystem = .imperial
     @State private var heightFeet: Int = 5
-    @State private var heightInches: Int = 10
+    @State private var heightInches: Int = 8
     @State private var weightLbs: Int = 170
-    @State private var heightCm: Int = 178
+    @State private var heightCm: Int = 173
     @State private var weightKg: Int = 77
     @State private var skinTone: SkinTone = .medium
     @State private var hairColor: HairColor = .brown
@@ -525,9 +525,7 @@ struct CharacterSetupView: View {
                         Text("Create Your Character")
                             .font(.theme.largeTitle)
                             .foregroundColor(.theme.textPrimary)
-                        Text("This helps us tailor looks to you")
-                            .font(.theme.body)
-                            .foregroundColor(.theme.textSecondary)
+                        PrivacyInfoBadge(text: "Privacy-first: we never ask for face or body images")
                     }
 
                     Card {
@@ -539,11 +537,25 @@ struct CharacterSetupView: View {
                                 .labelStyle(IconTitleLabelStyle())
                                 .foregroundColor(.theme.textSecondary)
                             Spacer()
-                            Picker("Age", selection: $age) {
-                                ForEach(13...90, id: \.self) { Text("\($0)") }
+                            Menu {
+                                ForEach(13...90, id: \.self) { value in
+                                    Button(action: { age = value }) {
+                                        Text("\(value)")
+                                    }
+                                }
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Text("\(age)")
+                                        .font(.theme.body)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.9)
+                                        .foregroundColor(.theme.textPrimary)
+                                    Image(systemName: "chevron.up.chevron.down")
+                                        .font(.footnote)
+                                        .foregroundColor(.theme.textSecondary)
+                                }
+                                .frame(width: 120, alignment: .trailing)
                             }
-                            .frame(width: 120)
-                            .clipped()
                         }
                         .padding(.top, 4)
 
@@ -659,15 +671,24 @@ struct CharacterSetupView: View {
         if let ht = user.hairType { hairType = ht }
         if let bt = user.beardType { beardType = bt }
         if unitSystem == .imperial {
-            if let h = user.height {
+            if let h = user.height, h > 0 {
                 let inchesTotal = Int(h.rounded())
                 heightFeet = max(3, min(7, inchesTotal / 12))
                 heightInches = max(0, min(11, inchesTotal % 12))
+            } else {
+                // Default to 5'8" if no valid height stored
+                heightFeet = 5
+                heightInches = 8
             }
-            if let w = user.weight { weightLbs = Int(w.rounded()) }
+            if let w = user.weight, w > 0 { weightLbs = Int(w.rounded()) }
         } else {
-            if let h = user.height { heightCm = Int(h.rounded()) }
-            if let w = user.weight { weightKg = Int(w.rounded()) }
+            if let h = user.height, h > 0 {
+                heightCm = Int(h.rounded())
+            } else {
+                // Default to ~173 cm if no valid height stored
+                heightCm = 173
+            }
+            if let w = user.weight, w > 0 { weightKg = Int(w.rounded()) }
         }
     }
 
@@ -784,6 +805,9 @@ private struct LabeledChip: View {
         Text(title)
             .font(.theme.subheadline)
             .foregroundColor(.theme.textSecondary)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .fixedSize(horizontal: true, vertical: false)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(Color.theme.surface.opacity(0.6))
@@ -816,6 +840,33 @@ private struct SelectGrid<Item: Hashable>: View {
                 .buttonStyle(.plain)
             }
         }
+    }
+}
+
+// Compact, visually appealing privacy badge used in onboarding
+private struct PrivacyInfoBadge: View {
+    let text: String
+    var body: some View {
+        HStack(alignment: .center, spacing: 8) {
+            Image(systemName: "lock.shield")
+                .font(.footnote)
+                .foregroundColor(.theme.primary)
+            Text(text)
+                .font(.theme.footnote)
+                .foregroundColor(.theme.textSecondary)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.theme.surface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.theme.border, lineWidth: 1)
+        )
+        .cornerRadius(12)
+        .frame(maxWidth: 360)
     }
 }
 

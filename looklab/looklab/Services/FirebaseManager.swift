@@ -235,8 +235,8 @@ final class FirebaseManager: ObservableObject {
     private func bodyDescription(from user: User?) -> String {
         guard let user = user else { return "" }
         var parts: [String] = []
-        if let h = user.height { parts.append(String(format: "%.2f height", h)) }
-        if let w = user.weight { parts.append(String(format: "%.0fkg", w)) }
+        if let h = user.height, h > 0 { parts.append(String(format: "%.2f height", h)) }
+        if let w = user.weight, w > 0 { parts.append(String(format: "%.0fkg", w)) }
         if let tone = user.skinTone?.rawValue { parts.append(tone.replacingOccurrences(of: "_", with: " ")) }
         return parts.joined(separator: ", ")
     }
