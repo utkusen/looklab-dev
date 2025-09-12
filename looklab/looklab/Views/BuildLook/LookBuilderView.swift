@@ -31,7 +31,7 @@ struct LookBuilderView: View {
 
             VStack(spacing: 16) {
                 header
-                progressSection
+                if !isDone { progressSection }
                 if !isDone { selectionSummary }
                 if !isDone { Spacer(minLength: 8) }
                 if isDone { resultSection } else { footerButtons }
@@ -55,9 +55,11 @@ struct LookBuilderView: View {
                 Text(isDone ? "Your Look is Ready" : "Building Your Look")
                     .font(.theme.title3)
                     .foregroundColor(.theme.textPrimary)
-                Text(isDone ? "Select your favorite" : phase.rawValue)
-                    .font(.theme.caption2)
-                    .foregroundColor(.theme.textSecondary)
+                if !isDone {
+                    Text(phase.rawValue)
+                        .font(.theme.caption2)
+                        .foregroundColor(.theme.textSecondary)
+                }
             }
             Spacer()
             Button(action: { withAnimation { showDetails.toggle() } }) {
@@ -175,14 +177,22 @@ struct LookBuilderView: View {
             }
             .frame(height: 340)
 
+            // Primary action: Save
+            Button(action: saveLook) {
+                Label("Save to My Looks", systemImage: "square.and.arrow.down")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(PrimaryButtonStyle())
+
+            // Secondary actions: Re-Create and Try Another
             HStack(spacing: 12) {
-                Button(action: saveLook) {
-                    Label("Save to My Looks", systemImage: "square.and.arrow.down")
+                Button(action: recreate) {
+                    Label("Re-Create", systemImage: "arrow.triangle.2.circlepath")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(PrimaryButtonStyle())
+                .buttonStyle(SecondaryButtonStyle())
 
-                Button(action: { /* try another variation later */ }) {
+                Button(action: { onCancel() }) {
                     Label("Try Another", systemImage: "sparkles")
                         .frame(maxWidth: .infinity)
                 }
@@ -245,6 +255,16 @@ struct LookBuilderView: View {
                 }
             }
         }
+    }
+
+    private func recreate() {
+        // Reset state and start the build again with the same inputs
+        generatedImage = nil
+        isDone = false
+        phase = .uploading
+        progress = 0.12
+        showDetails = true
+        startBuild()
     }
 
     private func animateProgress() {
