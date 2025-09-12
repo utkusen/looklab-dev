@@ -183,7 +183,7 @@ final class FirebaseManager: ObservableObject {
                     bottoms.append(payload)
                 case .shoes:
                     shoes.append(payload)
-                case .accessories, .head:
+                case .accessories, .head, .other:
                     accessories.append(payload)
                 case .fullbody:
                     fullOutfit.append(payload)

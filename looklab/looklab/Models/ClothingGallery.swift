@@ -22,6 +22,8 @@ struct ClothingGallery {
             return "accessories"
         case .head:
             return "head"
+        case .other:
+            return "other"
         }
     }
     
@@ -82,6 +84,10 @@ struct ClothingGallery {
         case .head:
             return [
                 "hat", "other"
+            ]
+        case .other:
+            return [
+                "other"
             ]
         }
     }
@@ -147,6 +153,8 @@ struct ClothingGallery {
             return "other"
         case .head:
             if lower.contains("hat") || lower.contains("beanie") || lower.contains("cap") { return "hat" }
+            return "other"
+        case .other:
             return "other"
         }
     }
@@ -224,7 +232,7 @@ struct ClothingGallery {
         }
         
         // Remove category prefix (top_, bottom_, etc.)
-        let categories = ["top_", "bottom_", "fullbody_", "outwear_", "shoe_", "accessories_", "head_"]
+        let categories = ["top_", "bottom_", "fullbody_", "outwear_", "shoe_", "accessories_", "head_", "other_"]
         for category in categories {
             if name.hasPrefix(category) {
                 name = String(name.dropFirst(category.count))

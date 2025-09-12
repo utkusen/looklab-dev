@@ -35,6 +35,7 @@ enum ClothingCategory: String, CaseIterable, Codable {
     case shoes = "shoes"
     case accessories = "accessories"
     case head = "head"
+    case other = "other"
     
     var displayName: String {
         switch self {
@@ -45,6 +46,7 @@ enum ClothingCategory: String, CaseIterable, Codable {
         case .shoes: return "Shoes"
         case .accessories: return "Accessories"
         case .head: return "Head"
+        case .other: return "Other"
         }
     }
     
@@ -57,6 +59,7 @@ enum ClothingCategory: String, CaseIterable, Codable {
         case .shoes: return "shoe"
         case .accessories: return "eyeglasses"
         case .head: return "hat.cap.fill"
+        case .other: return "square.grid.2x2"
         }
     }
 }

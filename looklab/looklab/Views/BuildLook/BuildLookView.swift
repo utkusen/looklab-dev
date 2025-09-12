@@ -10,6 +10,7 @@ struct BuildLookView: View {
 
     @State private var selectedTops: Set<String> = []
     @State private var selectedAccessories: Set<String> = []
+    @State private var selectedOther: Set<String> = []
     @State private var selectedSingles: [ClothingCategory: String] = [:]
     @State private var background: BackgroundType = .elevatorMirror
     @State private var builderInput: LookBuilderInput?
@@ -124,7 +125,7 @@ struct BuildLookView: View {
             set: { if !$0 { activeCategorySheet = nil } }
         )) {
             if let category = activeCategorySheet {
-                if category == .tops || category == .accessories {
+                if category == .tops || category == .accessories || category == .other {
                     BuildCategorySelectionSheet(
                         category: category,
                         items: items.filter { $0.category == category },
@@ -149,9 +150,9 @@ struct BuildLookView: View {
     private var selectionsByCategory: [ClothingCategory: [ClothingItem]] {
         var dict: [ClothingCategory: [ClothingItem]] = [:]
         let singleIDs = Set(selectedSingles.values)
-        let ids = selectedTops.union(selectedAccessories).union(singleIDs)
+        let ids = selectedTops.union(selectedAccessories).union(selectedOther).union(singleIDs)
         let selected = items.filter { ids.contains($0.id) }
-        for cat in [ClothingCategory.tops, .bottoms, .fullbody, .outerwear, .shoes, .accessories, .head] {
+        for cat in [ClothingCategory.tops, .bottoms, .fullbody, .outerwear, .shoes, .accessories, .head, .other] {
             dict[cat] = selected.filter { $0.category == cat }
         }
         return dict
@@ -168,6 +169,7 @@ struct BuildLookView: View {
         switch category {
         case .tops: return $selectedTops
         case .accessories: return $selectedAccessories
+        case .other: return $selectedOther
         default: return .constant([])
         }
     }
@@ -251,7 +253,7 @@ private struct CategoryGrid: View {
     let onTap: (ClothingCategory) -> Void
     let selections: [ClothingCategory: [ClothingItem]]
 
-    private let categories: [ClothingCategory] = [.tops, .bottoms, .fullbody, .outerwear, .shoes, .accessories, .head]
+    private let categories: [ClothingCategory] = [.tops, .bottoms, .fullbody, .outerwear, .shoes, .accessories, .head, .other]
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
     var body: some View {
